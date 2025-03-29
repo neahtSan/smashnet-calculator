@@ -1,4 +1,4 @@
-# 🎮 SmashNet Calculator
+# 🏸 Badminton Matchmaker
 
 <div align="center">
 
@@ -7,32 +7,43 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3.3-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A modern web application for managing and calculating Smash Bros. tournament matches with an intelligent matchmaking system.
+A modern web application for managing and calculating badminton tournament matches with an intelligent matchmaking system.
 
 [Live Demo](https://smashnet-calculator.vercel.app) · [Report Bug](https://github.com/neahtSan/smashnet-calculator/issues) · [Request Feature](https://github.com/neahtSan/smashnet-calculator/issues)
 
 </div>
 
-## ✨ Features
+## 🎯 The Problem
+
+Organizing badminton matches with 7 players presents several challenges:
+
+1. **Uneven Teams**: With 7 players, it's impossible to divide into equal teams of 2, making doubles matches challenging to organize.
+2. **Player Rotation**: Some players might end up playing too many consecutive matches while others wait too long.
+3. **Skill Balance**: Ensuring teams are balanced in terms of player skill levels becomes increasingly difficult.
+4. **Match History**: Keeping track of who played with whom and match outcomes becomes complex.
+
+## ✨ The Solution
+
+This web application solves these problems by:
 
 ### 🎯 Core Features
-- **Player Management**
-  - Add, edit, and delete players
-  - Track player statistics
-  - Maximum 7 players support
+- **Smart Team Formation**
+  - Intelligent algorithm for creating balanced teams
+  - Considers player win rates and previous match history
+  - Special handling for the first two matches to establish initial rankings
+  - Maximum 7 players support with optimal rotation
+
+- **Match Management**
+  - Track match outcomes and player statistics
+  - Record team compositions and winners
+  - Maintain player win/loss records
   - Real-time player stats updates
 
-- **Intelligent Matchmaking**
-  - Smart team balancing
-  - Win rate consideration
-  - Previous match history analysis
-  - Special handling for first two matches
-
-- **Match History**
-  - Complete match tracking
-  - Winner determination
-  - Timestamp recording
-  - Team composition history
+- **Fair Play System**
+  - Prevents the same players from always playing together
+  - Ensures equal playing time for all participants
+  - Balances teams based on historical performance
+  - Special consideration for players who lost previous matches
 
 ### 🎨 UI/UX Features
 - Modern, responsive design
