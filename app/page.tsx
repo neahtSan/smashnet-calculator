@@ -30,6 +30,14 @@ export default function Home() {
       message.error('Maximum 7 players allowed');
       return;
     }
+
+    // Check for duplicate names
+    const isDuplicateName = players.some(p => p.name.toLowerCase() === values.name.toLowerCase());
+    if (isDuplicateName) {
+      message.error('A player with this name already exists');
+      return;
+    }
+
     const newPlayer: Player = {
       id: Date.now().toString(),
       name: values.name,
@@ -50,6 +58,17 @@ export default function Home() {
 
   const handleUpdatePlayer = (values: { name: string }) => {
     if (!editingPlayer) return;
+
+    // Check for duplicate names, excluding the current player being edited
+    const isDuplicateName = players.some(p => 
+      p.id !== editingPlayer.id && 
+      p.name.toLowerCase() === values.name.toLowerCase()
+    );
+    if (isDuplicateName) {
+      message.error('A player with this name already exists');
+      return;
+    }
+
     setPlayers(players.map(p => 
       p.id === editingPlayer.id ? { ...p, name: values.name } : p
     ));
@@ -310,24 +329,54 @@ const handleCreateMatch = () => {
       <Modal
         title={editingPlayer ? "Edit Player" : "Add Player"}
         open={isModalVisible}
-        onOk={form.submit}
+        onOk={() => {
+          form.validateFields().then(() => {
+            form.submit();
+          }).catch(() => {
+            // Validation failed, do nothing
+          });
+        }}
         onCancel={() => {
           setIsModalVisible(false);
           setEditingPlayer(null);
           form.resetFields();
+        }}
+        okButtonProps={{
+          disabled: form.getFieldsError().some(({ errors }) => errors.length > 0),
+          loading: form.getFieldsError().some(({ errors }) => errors.length > 0)
         }}
       >
         <Form
           form={form}
           onFinish={editingPlayer ? handleUpdatePlayer : handleAddPlayer}
           layout="vertical"
+          validateTrigger={['onChange', 'onBlur']}
         >
           <Form.Item
             name="name"
             label="Player Name"
-            rules={[{ required: true, message: 'Please enter player name' }]}
+            rules={[
+              { required: true, message: 'Please enter player name' },
+              {
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+                  
+                  if (value.length >= 32) {
+                    return Promise.reject('Player name cannot exceed 32 characters');
+                  }
+
+                  const isDuplicateName = players.some(p => 
+                    (editingPlayer ? p.id !== editingPlayer.id : true) && 
+                    p.name.toLowerCase() === value.toLowerCase()
+                  );
+                  
+                  return isDuplicateName ? Promise.reject('A player with this name already exists') : Promise.resolve();
+                },
+                validateTrigger: ['onChange', 'onBlur']
+              }
+            ]}
           >
-            <Input />
+            <Input maxLength={32} />
           </Form.Item>
         </Form>
       </Modal>
