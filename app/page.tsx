@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input, Button, List, Card, Modal, Form, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Player, Match } from '@/types';
@@ -13,12 +13,31 @@ export default function Home() {
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [form] = Form.useForm();
   const [isCreatingMatch, setIsCreatingMatch] = useState(false);
+  const [isMatchButtonDisabled, setIsMatchButtonDisabled] = useState(true);
+  const [previousPlayerCount, setPreviousPlayerCount] = useState(0);
+
+  useEffect(() => {
+    // Enable button and reset matches when player count changes
+    if (players.length !== previousPlayerCount) {
+      setIsMatchButtonDisabled(false);
+      setMatches([]); // Reset matches when player count changes
+      setPreviousPlayerCount(players.length);
+    }
+  }, [players.length]);
 
   const handleAddPlayer = (values: { name: string }) => {
     if (players.length >= 7) {
       message.error('Maximum 7 players allowed');
       return;
     }
+
+    // Check for duplicate names
+    const isDuplicateName = players.some(p => p.name.toLowerCase() === values.name.toLowerCase());
+    if (isDuplicateName) {
+      message.error('A player with this name already exists');
+      return;
+    }
+
     const newPlayer: Player = {
       id: Date.now().toString(),
       name: values.name,
@@ -39,6 +58,17 @@ export default function Home() {
 
   const handleUpdatePlayer = (values: { name: string }) => {
     if (!editingPlayer) return;
+
+    // Check for duplicate names, excluding the current player being edited
+    const isDuplicateName = players.some(p => 
+      p.id !== editingPlayer.id && 
+      p.name.toLowerCase() === values.name.toLowerCase()
+    );
+    if (isDuplicateName) {
+      message.error('A player with this name already exists');
+      return;
+    }
+
     setPlayers(players.map(p => 
       p.id === editingPlayer.id ? { ...p, name: values.name } : p
     ));
@@ -48,55 +78,82 @@ export default function Home() {
   };
 
   const handleDeletePlayer = (playerId: string) => {
-    setPlayers(players.filter(p => p.id !== playerId));
+    const updatedPlayers = players.filter(p => p.id !== playerId);
+    setPlayers(updatedPlayers);
+  
+    // If a player from an active match was removed, clear unfinished matches
+    const updatedMatches = matches.filter(match => 
+      match.team1.every(player => player.id !== playerId) &&
+      match.team2.every(player => player.id !== playerId)
+    );
+    
+    setMatches(updatedMatches);
   };
+  
 
-  const handleCreateMatch = () => {
-    if (players.length < 4) {
-      message.error('Need at least 4 players to create a match');
-      return;
-    }
+const handleCreateMatch = () => {
+  if (players.length < 4) {
+    message.error('Need at least 4 players to create a match');
+    return;
+  }
 
-    try {
-      let selectedPlayers: [Player, Player, Player, Player];
+  try {
+    let selectedPlayers: [Player, Player, Player, Player];
+
+    if (matches.length === 0) {
+      console.log('Creating first match');
+      selectedPlayers = findFirstMatch(players);
+    } else if (matches.length === 1 && matches[0].winner) {
+      console.log('Creating second match');
+      selectedPlayers = findSecondMatch(players, matches[0]);
+    } else {
+      console.log('Creating subsequent match');
       
-      // Use specific logic for first two matches
-      if (matches.length === 0) {
-        console.log('Creating first match');
-        selectedPlayers = findFirstMatch(players);
-      } else if (matches.length === 1 && matches[0].winner) {
-        console.log('Creating second match');
-        selectedPlayers = findSecondMatch(players, matches[0]);
+      // Get players who haven't played in recent matches
+      const recentMatches = matches.slice(-3); // Look at last 3 matches
+      const availablePlayers = players.filter(p => 
+        !recentMatches.some(match => 
+          match.team1.includes(p) || match.team2.includes(p)
+        )
+      );
+
+      // If we have enough players who haven't played recently, prioritize them
+      if (availablePlayers.length >= 4) {
+        console.log('Using players who haven\'t played recently');
+        selectedPlayers = findFirstMatch(availablePlayers);
       } else {
-        console.log('Creating subsequent match');
+        // If not enough available players, try to find the best match
+        // while still considering player history and win rates
+        console.log('Finding best match with all players');
         selectedPlayers = findBestMatch(players, matches);
       }
-
-      console.log('Selected players:', { 
-        team1Player1: selectedPlayers[0], 
-        team1Player2: selectedPlayers[1], 
-        team2Player1: selectedPlayers[2], 
-        team2Player2: selectedPlayers[3] 
-      });
-
-      const newMatch: Match = {
-        id: Date.now().toString(),
-        team1: [selectedPlayers[0], selectedPlayers[1]],
-        team2: [selectedPlayers[2], selectedPlayers[3]],
-        winner: null,
-        timestamp: Date.now(),
-      };
-
-      console.log('New match:', newMatch);
-
-      setMatches([...matches, newMatch]);
-      setIsCreatingMatch(false);
-    } catch (error) {
-      console.error('Error creating match:', error);
-      message.error('Error creating match');
-      setIsCreatingMatch(false);
     }
-  };
+
+    console.log('Selected players:', { 
+      team1Player1: selectedPlayers[0], 
+      team1Player2: selectedPlayers[1], 
+      team2Player1: selectedPlayers[2], 
+      team2Player2: selectedPlayers[3] 
+    });
+
+    const newMatch: Match = {
+      id: Date.now().toString(),
+      team1: [selectedPlayers[0], selectedPlayers[1]],
+      team2: [selectedPlayers[2], selectedPlayers[3]],
+      winner: null,
+      timestamp: Date.now(),
+    };
+
+    console.log('New match:', newMatch);
+    setMatches([...matches, newMatch]);
+    setIsCreatingMatch(false);
+    setIsMatchButtonDisabled(true); // Disable button after creating a match
+  } catch (error) {
+    console.error('Error creating match:', error);
+    message.error('Error creating match');
+    setIsCreatingMatch(false);
+  }
+};
 
   const handleUpdateMatchResult = (matchId: string, winner: 'team1' | 'team2') => {
     const match = matches.find(m => m.id === matchId);
@@ -201,7 +258,7 @@ export default function Home() {
               type="primary" 
               onClick={handleCreateMatch}
               className="w-full mb-6"
-              disabled={(matches.length > 0 && !matches[matches.length - 1].winner)}
+              disabled={isMatchButtonDisabled}
             >
               {isCreatingMatch ? 'Creating Match...' : 'Create New Match'}
             </Button>
@@ -272,24 +329,54 @@ export default function Home() {
       <Modal
         title={editingPlayer ? "Edit Player" : "Add Player"}
         open={isModalVisible}
-        onOk={form.submit}
+        onOk={() => {
+          form.validateFields().then(() => {
+            form.submit();
+          }).catch(() => {
+            // Validation failed, do nothing
+          });
+        }}
         onCancel={() => {
           setIsModalVisible(false);
           setEditingPlayer(null);
           form.resetFields();
+        }}
+        okButtonProps={{
+          disabled: form.getFieldsError().some(({ errors }) => errors.length > 0),
+          loading: form.getFieldsError().some(({ errors }) => errors.length > 0)
         }}
       >
         <Form
           form={form}
           onFinish={editingPlayer ? handleUpdatePlayer : handleAddPlayer}
           layout="vertical"
+          validateTrigger={['onChange', 'onBlur']}
         >
           <Form.Item
             name="name"
             label="Player Name"
-            rules={[{ required: true, message: 'Please enter player name' }]}
+            rules={[
+              { required: true, message: 'Please enter player name' },
+              {
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+                  
+                  if (value.length >= 32) {
+                    return Promise.reject('Player name cannot exceed 32 characters');
+                  }
+
+                  const isDuplicateName = players.some(p => 
+                    (editingPlayer ? p.id !== editingPlayer.id : true) && 
+                    p.name.toLowerCase() === value.toLowerCase()
+                  );
+                  
+                  return isDuplicateName ? Promise.reject('A player with this name already exists') : Promise.resolve();
+                },
+                validateTrigger: ['onChange', 'onBlur']
+              }
+            ]}
           >
-            <Input />
+            <Input maxLength={32} />
           </Form.Item>
         </Form>
       </Modal>
