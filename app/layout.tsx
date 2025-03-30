@@ -1,35 +1,28 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { ConfigProvider, App as AntApp } from 'antd';
-import 'antd/dist/reset.css';
+import './globals.css';
+import { Inter } from 'next/font/google';
+import { ConfigProvider } from 'antd';
+import StyledComponentsRegistry from './lib/AntdRegistry';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: "Badminton Matchmaker",
-  description: "A mobile-first web app for creating balanced badminton matches",
+export const metadata = {
+  title: 'Smashnet Calculator',
+  description: 'Badminton matchmaking web app',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ConfigProvider
-          theme={{
-            token: {
-              colorPrimary: '#1677ff',
-            },
-          }}
-        >
-          <AntApp>
+        <StyledComponentsRegistry>
+          <ConfigProvider>
             {children}
-          </AntApp>
-        </ConfigProvider>
+          </ConfigProvider>
+        </StyledComponentsRegistry>
       </body>
     </html>
   );
