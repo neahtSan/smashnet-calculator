@@ -1,4 +1,5 @@
-import { Player, Match } from '@/types';
+import { Player, Match } from '@/types/interface';
+import { getGroupSizes } from './groupPlayer';
 
 export const calculateWinRate = (player: Player): number => {
   return player.matches === 0 ? 0 : player.wins / player.matches;
@@ -15,14 +16,7 @@ export const getRandomPlayers = (players: Player[], count: number, seed: number)
 };
 
 export const groupPlayers = (players: Player[]): [Player[], Player[]] => {
-  const groupings: Record<number, [number, number]> = {
-    4: [2, 2],
-    5: [3, 2],
-    6: [3, 3],
-    7: [4, 3]
-  };
-
-  const [group1Size, group2Size] = groupings[players.length] || [0, 0];
+  const [group1Size, group2Size] = getGroupSizes(players.length);
   return [players.slice(0, group1Size), players.slice(group1Size)];
 };
 

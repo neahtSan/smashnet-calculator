@@ -1,4 +1,4 @@
-# 🏸 Badminton Matchmaker
+# 🏸 Smashnet Calculator
 
 <div align="center">
 
@@ -7,131 +7,176 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3.3-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A modern web application for managing and calculating badminton tournament matches with an intelligent matchmaking system.
+A modern web application for managing badminton tournaments with intelligent group distribution and matchmaking system.
 
 [Live Demo](https://smashnet-calculator.vercel.app) · [Report Bug](https://github.com/neahtSan/smashnet-calculator/issues) · [Request Feature](https://github.com/neahtSan/smashnet-calculator/issues)
 
 </div>
 
-## 🎯 The Problem
+## 🎯 Current Status
 
-Organizing badminton matches with 7 players presents several challenges:
+The application is in beta, with the following implementation status:
+- ✅ Single court logic (supporting up to 7 players)
+- 🚧 Multi-court logic (structure ready for up to 12 players)
+- 🚧 Badminton Cost Calculator
+- ✅ Group distribution system
+- ✅ Match result tracking
+- ✅ Tournament statistics
 
-1. **Uneven Teams**: With 7 players, it's impossible to divide into equal teams of 2, making doubles matches challenging to organize.
-2. **Player Rotation**: Some players might end up playing too many consecutive matches while others wait too long.
-3. **Skill Balance**: Ensuring teams are balanced in terms of player skill levels becomes increasingly difficult.
-4. **Match History**: Keeping track of who played with whom and match outcomes becomes complex.
+## ✨ Features
 
-## ✨ The Solution
+### 🎮 Player Management
+- **Dynamic Group Distribution**
+  ```
+  4 players  
+  5 players  
+  6 players  
+  7 players 
+  (Support ready for 8-12 players)
+  ```
+- Add/Edit/Delete players with name validation
+- Real-time player statistics tracking
+- Win rate calculations and rankings
 
-This web application solves these problems by:
+### 🎯 Match System
+- **Intelligent Matchmaking**
+  - Fair player rotation system
+  - Considers previous match history
+  - Balances teams based on performance
+  - Special handling for first matches
+- **Match Controls**
+  - Winner selection with confirmation
+  - Match reversal capability
+  - Match history tracking
+  - Player performance updates
 
-### 🎯 Core Features
-- **Smart Team Formation**
-  - Intelligent algorithm for creating balanced teams
-  - Considers player win rates and previous match history
-  - Special handling for the first two matches to establish initial rankings
-  - Maximum 7 players support with optimal rotation
+### 🏆 Tournament Features
+- Live win/loss statistics
+- Player rankings with tie handling
+- Tournament reset functionality
+- Match result verification
+- Local storage persistence
 
-- **Match Management**
-  - Track match outcomes and player statistics
-  - Record team compositions and winners
-  - Maintain player win/loss records
-  - Real-time player stats updates
+## 🛠️ Technical Implementation
 
-- **Fair Play System**
-  - Prevents the same players from always playing together
-  - Ensures equal playing time for all participants
-  - Balances teams based on historical performance
-  - Special consideration for players who lost previous matches
-
-### 🎨 UI/UX Features
-- Modern, responsive design
-- Ant Design components
-- Tailwind CSS styling
-- Dark/Light mode support
-- Mobile-friendly interface
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Framework**: Next.js 14
+### Core Technologies
+- **Framework**: Next.js 14 (App Router)
 - **UI Library**: React 18
 - **Language**: TypeScript
 - **Styling**: 
   - Tailwind CSS
-  - Ant Design
-  - CSS Modules
+  - Ant Design Components
+  - Responsive Design
 
-### Development Tools
-- **Package Manager**: PNPM/Bun
-- **Type Checking**: TypeScript
-- **Code Quality**: ESLint
-- **Version Control**: Git
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ or Bun
-- PNPM (recommended) or npm/yarn
-- Git
-
-### Installation
-
-1. **Clone the repository**
-```bash
-git clone https://github.com/neahtSan/smashnet-calculator.git
-cd smashnet-calculator
+### Key Components
 ```
-
-2. **Install dependencies**
-```bash
-pnpm install
+components/
+├── PlayerForm/          # Player management modal
+├── CurrentMatch/        # Active match display
+├── PlayerList/          # Player statistics view
+├── TournamentResults/   # Final rankings modal
+└── Confirmations/      # Action verification modals
 ```
-
-3. **Start the development server**
-```bash
-pnpm run dev
-```
-
-4. **Open your browser**
-Visit [http://localhost:3000](http://localhost:3000)
-
-## 💻 Development
-
-### Available Scripts
-- `pnpm run dev` - Start development server
-- `pnpm run build` - Build for production
-- `pnpm run start` - Start production server
-- `pnpm run lint` - Run ESLint
 
 ### Project Structure
 ```
 smashnet-calculator/
 ├── app/                    # Next.js app directory
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Home page
-│   └── globals.css        # Global styles
+│   ├── layout.tsx         # Root layout with global styles
+│   ├── page.tsx           # Main application page
+│   └── globals.css        # Global styles and Tailwind imports
+│
 ├── components/            # React components
-├── types/                 # TypeScript types
-├── utils/                 # Utility functions
-├── public/               # Static assets
-└── package.json          # Project dependencies
+│   ├── PlayerForm/       # Player management modal
+│   │   └── index.tsx     # Form for adding/editing players
+│   │
+│   ├── CurrentMatch/     # Active match display
+│   │   └── index.tsx     # Current match status and controls
+│   │
+│   ├── PlayerList/       # Player statistics view
+│   │   └── index.tsx     # List of players with their stats
+│   │
+│   ├── TournamentResults/# Tournament results modal
+│   │   └── index.tsx     # Final rankings and statistics
+│   │
+│   └── Confirmations/    # Action verification modals
+│       ├── DeleteConfirmation.tsx    # Player deletion confirmation
+│       ├── FinishConfirmation.tsx    # Tournament finish confirmation
+│       └── RevertMatchConfirmation.tsx # Match reversion confirmation
+│
+├── types/                # TypeScript type definitions
+│   └── interface.ts     # Shared interfaces and types
+│
+├── utils/               # Utility functions
+│   ├── matchmaker.ts    # Match creation and team balancing logic
+│   ├── groupPlayer.ts   # Player group distribution logic
+│   └── storage.ts       # Local storage management
+│
+├── public/             # Static assets
+│   └── images/        # Image assets
+│
+├── styles/            # Component-specific styles
+│   └── components/   # Styled components
+│
+├── package.json      # Project dependencies and scripts
+├── tailwind.config.js # Tailwind CSS configuration
+└── tsconfig.json     # TypeScript configuration
 ```
 
-## 🌐 Deployment
+## 🚀 Getting Started
 
-This project is configured for deployment on Vercel:
+### Prerequisites
+- Node.js 18+
+- npm/pnpm
 
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Vercel will automatically deploy your application
+### Quick Start
+1. **Clone and Install**
+   ```bash
+   git clone https://github.com/neahtSan/smashnet-calculator.git
+   cd smashnet-calculator
+   npm install
+   ```
 
-### Deployment Features
-- Automatic HTTPS
-- Global CDN
-- Continuous Deployment
-- Preview Deployments
+2. **Development**
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000)
+
+## 🔜 Upcoming Features
+
+- **Multi-Court Support**
+  - Extended group sizes (8-12 players)
+  - Parallel match management
+  - Enhanced rotation system
+
+- **Enhanced Statistics**
+  - Tournament history
+  - Player performance trends
+  - Advanced analytics
+
+- **UI/UX Improvements**
+  - Match visualization
+  - Tournament brackets
+  - Player profiles
+
+- **Badminton Cost Calculator**
+  - **Expense Management**
+    - Court fee calculation (per hour, total hours)
+    - Shuttlecock cost tracking (price per piece, total used)
+    - Custom expense categories (drinks, snacks, equipment)
+  - **Cost Calculation & Splitting**
+    - Automatic per-player cost calculation
+    - Detailed cost breakdown
+    - Dynamic updates as expenses change
+  - **PromptPay Integration**
+    - QR code generation for each player's share
+    - Customizable PromptPay phone number
+    - QR code download as PNG
+  - **Sharing Options**
+    - Shareable payment links
+    - Email integration
+    - Social media sharing (LINE, Messenger, WhatsApp)
 
 ## 🤝 Contributing
 
@@ -149,9 +194,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [Next.js](https://nextjs.org/) - The React Framework
-- [Ant Design](https://ant.design/) - An enterprise-class UI design language
+### Core Technologies
+- [Next.js](https://nextjs.org/) - The React Framework for production
+- [React](https://reactjs.org/) - A JavaScript library for building user interfaces
+- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
 - [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
+- [Ant Design](https://ant.design/) - An enterprise-class UI design language
+
+### Development Tools
+- [ESLint](https://eslint.org/) - JavaScript linting utility
+- [Prettier](https://prettier.io/) - Code formatter
+- [Git](https://git-scm.com/) - Version control system
+- [Vercel](https://vercel.com/) - Deployment platform
+
+### Icons & Assets
+- [Heroicons](https://heroicons.com/) - Beautiful hand-crafted SVG icons
+- [Emoji](https://emojipedia.org/) - For UI elements and badges
+
+### Inspiration
+- Badminton community feedback and suggestions
+- Modern web development best practices
+- User experience research in sports applications
 
 ---
 
