@@ -1,6 +1,6 @@
 import { Modal, Button, List, Avatar, Space, Typography, Spin } from 'antd';
 import { UserOutlined, TrophyOutlined } from '@ant-design/icons';
-import { PlayerStats } from '@/types/interface';
+import { PlayerStats } from '@/interface';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

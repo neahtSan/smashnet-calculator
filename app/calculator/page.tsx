@@ -1,15 +1,16 @@
 'use client';
 
 import { BadmintonCostCalculator } from '@/components/BadmintonCostCalculator';
-import { PlayerStats } from '@/types/interface';
+import { PlayerStats } from '@/interface';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Spin } from 'antd';
+import { Spin, Modal } from 'antd';
 
 export default function CalculatorPage() {
   const router = useRouter();
   const [players, setPlayers] = useState<PlayerStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
 
   useEffect(() => {
     // Get players from localStorage
@@ -27,9 +28,24 @@ export default function CalculatorPage() {
       router.push('/');
     }
     setIsLoading(false);
+
+    // Add beforeunload event listener
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [router]);
 
   const handleBackToResults = () => {
+    setIsConfirmModalVisible(true);
+  };
+
+  const handleConfirmBack = () => {
+    localStorage.removeItem('calculatorPlayers');
     router.push('/');
   };
 
@@ -49,6 +65,14 @@ export default function CalculatorPage() {
         players={players}
         onBackToResults={handleBackToResults}
       />
+      <Modal
+        title="Leave Calculator?"
+        open={isConfirmModalVisible}
+        onOk={handleConfirmBack}
+        onCancel={() => setIsConfirmModalVisible(false)}
+      >
+        <p>If you leave now, all player data will be lost. Are you sure you want to continue?</p>
+      </Modal>
     </div>
   );
 } 

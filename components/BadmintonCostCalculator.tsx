@@ -1,31 +1,7 @@
 import { useState } from 'react';
 import { Form, Input, Button, InputNumber, List, Typography, Space, Divider, Select } from 'antd';
 import { DeleteOutlined, PlusOutlined, QrcodeOutlined, ShareAltOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined } from '@ant-design/icons';
-import { PlayerStats } from '@/types/interface';
-
-interface BadmintonCostCalculatorProps {
-  isVisible: boolean;
-  onClose: () => void;
-  players: PlayerStats[];
-  onBackToResults: () => void;
-}
-
-interface CourtFee {
-  hourlyRate: number;
-  hours: number;
-}
-
-interface Shuttlecock {
-  quantity: number;
-  pricePerPiece: number;
-}
-
-interface CustomExpense {
-  id: string;
-  name: string;
-  amount: number;
-  assignedTo: string[]; // Array of player names
-}
+import { PlayerStats, CourtFee, Shuttlecock, CustomExpense, BadmintonCostCalculatorProps } from '@/interface';
 
 export const BadmintonCostCalculator = ({
   isVisible,
