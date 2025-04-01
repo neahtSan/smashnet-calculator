@@ -369,7 +369,7 @@ export default function Home() {
               <p className="text-sm text-blue-700 text-center">
                 Please add at least {MIN_PLAYERS} players to start a match.
                 {players.length >= MAX_PLAYERS ? (
-                  <span className="block mt-1">Maximum number of players ({MAX_PLAYERS}) reached.</span>
+                  <span className="block mt-1">Maximum of {MAX_PLAYERS} players reached.</span>
                 ) : (
                   <span className="block mt-1">You can add up to {MAX_PLAYERS} players.</span>
                 )}
