@@ -1,5 +1,6 @@
 import { Modal, Typography, Button } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { VerificationModalProps } from '@/interface/qrcode';
 
 interface VerificationModalProps {
   visible: boolean;

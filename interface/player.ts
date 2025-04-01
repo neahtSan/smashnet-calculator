@@ -16,7 +16,9 @@ export interface PlayerStats {
 }
 
 export interface PlayerFormProps {
-  onSubmit: (name: string) => void;
-  onCancel: () => void;
-  initialName?: string;
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (player: Player) => void;
+  initialValues?: Partial<Player>;
+  title?: string;
 } 
