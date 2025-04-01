@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Input, Button, List, Card, Modal, Form, message, Avatar, Space, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined, UndoOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined, UndoOutlined, CheckCircleFilled } from '@ant-design/icons';
 import { Player, Match, PlayerStats } from '@/types/interface';
 import { findBestMatch, updatePlayerStats, findFirstMatch, findSecondMatch } from '@/utils/matchmaker';
 
@@ -20,6 +20,7 @@ export default function Home() {
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [isRevertModalVisible, setIsRevertModalVisible] = useState(false);
   const [matchToRevert, setMatchToRevert] = useState<string | null>(null);
+  const [selectedWinner, setSelectedWinner] = useState<'team1' | 'team2' | null>(null);
 
   useEffect(() => {
     // Enable button and reset matches when player count changes
@@ -313,6 +314,16 @@ const handleCreateMatch = () => {
     message.success('Match reverted successfully');
   };
 
+  const handleSelectWinner = (team: 'team1' | 'team2') => {
+    setSelectedWinner(team);
+  };
+
+  const handleConfirmWinner = (matchId: string) => {
+    if (!selectedWinner) return;
+    handleUpdateMatchResult(matchId, selectedWinner);
+    setSelectedWinner(null);
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center py-8">
       <div className="w-full max-w-md px-4">
@@ -431,34 +442,60 @@ const handleCreateMatch = () => {
                 className="shadow-md"
               >
                 <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Team 1</h3>
-                    <p className="text-gray-600">{currentMatch.team1[0].name} & {currentMatch.team1[1].name}</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Team 2</h3>
-                    <p className="text-gray-600">{currentMatch.team2[0].name} & {currentMatch.team2[1].name}</p>
-                  </div>
-                  {!currentMatch.winner && (
-                    <div className="flex gap-2">
-                      <Button 
-                        type="primary" 
-                        onClick={() => handleUpdateMatchResult(currentMatch.id, 'team1')}
-                        className="flex-1"
-                      >
-                        Team 1 Wins
-                      </Button>
-                      <Button 
-                        type="primary" 
-                        onClick={() => handleUpdateMatchResult(currentMatch.id, 'team2')}
-                        className="flex-1"
-                      >
-                        Team 2 Wins
-                      </Button>
+                  {/* Team 1 Selection */}
+                  <div 
+                    className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
+                      selectedWinner === 'team1' 
+                        ? 'bg-green-50 border-2 border-green-500' 
+                        : 'bg-gray-50 border-2 border-transparent hover:border-blue-300'
+                    }`}
+                    onClick={() => !currentMatch.winner && handleSelectWinner('team1')}
+                  >
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-semibold text-gray-700">Team 1</h3>
+                      {selectedWinner === 'team1' && (
+                        <CheckCircleFilled className="text-green-500 text-lg" />
+                      )}
                     </div>
+                    <p className="text-gray-600 mt-2">{currentMatch.team1[0].name} & {currentMatch.team1[1].name}</p>
+                  </div>
+
+                  {/* Team 2 Selection */}
+                  <div 
+                    className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
+                      selectedWinner === 'team2' 
+                        ? 'bg-green-50 border-2 border-green-500' 
+                        : 'bg-gray-50 border-2 border-transparent hover:border-blue-300'
+                    }`}
+                    onClick={() => !currentMatch.winner && handleSelectWinner('team2')}
+                  >
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-semibold text-gray-700">Team 2</h3>
+                      {selectedWinner === 'team2' && (
+                        <CheckCircleFilled className="text-green-500 text-lg" />
+                      )}
+                    </div>
+                    <p className="text-gray-600 mt-2">{currentMatch.team2[0].name} & {currentMatch.team2[1].name}</p>
+                  </div>
+
+                  {/* Confirm Winner Button */}
+                  {!currentMatch.winner && (
+                    <Button 
+                      type="primary"
+                      onClick={() => handleConfirmWinner(currentMatch.id)}
+                      disabled={!selectedWinner}
+                      className="w-full mt-4"
+                      style={{ 
+                        backgroundColor: selectedWinner ? '#52c41a' : undefined,
+                        opacity: selectedWinner ? 1 : 0.5
+                      }}
+                    >
+                      Confirm Winner
+                    </Button>
                   )}
+
                   {currentMatch.winner && (
-                    <div className="text-center text-green-600 font-semibold">
+                    <div className="text-center text-green-600 font-semibold mt-4">
                       {currentMatch.winner === 'team1' ? (
                         <p>{currentMatch.team1[0].name} & {currentMatch.team1[1].name} won!</p>
                       ) : (
@@ -477,7 +514,6 @@ const handleCreateMatch = () => {
             type="primary"
             onClick={handleFinishPlaying}
             className="w-full mt-4"
-            style={{ backgroundColor: '#52c41a' }}
           >
             Finish Tournament
           </Button>
