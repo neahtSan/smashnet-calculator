@@ -21,6 +21,7 @@ export const PlayerForm = ({
 
   const handleSubmit = (values: { name: string }) => {
     onSubmit(values.name);
+    form.resetFields(); // Reset form after submission
   };
 
   return (
@@ -60,6 +61,7 @@ export const PlayerForm = ({
             maxLength={16}
             showCount
             status={form.getFieldError('name').length > 0 ? 'error' : undefined}
+            autoComplete="off"
           />
         </Form.Item>
         <Form.Item>

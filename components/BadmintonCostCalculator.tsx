@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Form, Input, Button, InputNumber, List, Typography, Space, Divider, Select } from 'antd';
-import { DeleteOutlined, PlusOutlined, QrcodeOutlined, ShareAltOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import { Form, Input, Button, InputNumber, List, Typography, Space, Divider, Select, Modal } from 'antd';
+import { DeleteOutlined, PlusOutlined, QrcodeOutlined, ShareAltOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { PlayerStats, CourtFee, Shuttlecock, CustomExpense, BadmintonCostCalculatorProps } from '@/interface';
+import { QRCodeSVG } from 'qrcode.react';
+import generatePayload from 'promptpay-qr';
 
 export const BadmintonCostCalculator = ({
   isVisible,
@@ -21,8 +23,11 @@ export const BadmintonCostCalculator = ({
     pricePerPiece: 0
   });
   const [customExpenses, setCustomExpenses] = useState<CustomExpense[]>([]);
-  const [promptPayNumber, setPromptPayNumber] = useState('');
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [promptPayNumber, setPromptPayNumber] = useState<string>('');
+  const [qrCodeVisible, setQrCodeVisible] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<{ amount?: number; message?: string } | null>(null);
+  const [isValidPromptPay, setIsValidPromptPay] = useState(false);
+  const [verifyNumberVisible, setVerifyNumberVisible] = useState(false);
 
   const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
   const totalShuttlecockCost = shuttlecock.quantity * shuttlecock.pricePerPiece;
@@ -88,9 +93,140 @@ export const BadmintonCostCalculator = ({
     ));
   };
 
-  const handleGenerateQR = () => {
-    // TODO: Implement QR code generation
-    console.log('Generating QR code for:', promptPayNumber, totalCost);
+  const calculateTotalCost = (values: any) => {
+    const courtFee = values.courtFee || { hourlyRate: 0, hours: 0 };
+    const shuttlecock = values.shuttlecock || { quantity: 0, pricePerPiece: 0 };
+    const customExpenses = values.customExpenses || [];
+
+    const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
+    const totalShuttlecock = shuttlecock.quantity * shuttlecock.pricePerPiece;
+    const totalCustomExpenses = customExpenses.reduce((sum: number, expense: CustomExpense) => sum + expense.amount, 0);
+
+    return totalCourtFee + totalShuttlecock + totalCustomExpenses;
+  };
+
+  const calculatePlayerCost = (values: any, playerName: string) => {
+    const totalCost = calculateTotalCost(values);
+    const customExpenses = values.customExpenses || [];
+    
+    // Calculate player's share of custom expenses
+    const playerCustomExpenses = customExpenses.reduce((sum: number, expense: CustomExpense) => {
+      if (expense.assignedTo.includes(playerName)) {
+        return sum + (expense.amount / expense.assignedTo.length);
+      }
+      return sum;
+    }, 0);
+
+    // Calculate player's share of common expenses (court fee and shuttlecock)
+    const commonExpenses = totalCost - playerCustomExpenses;
+    const commonExpenseShare = commonExpenses / players.length;
+
+    return commonExpenseShare + playerCustomExpenses;
+  };
+
+  const handleGenerateQRCode = () => {
+    // Show verification modal first
+    setVerifyNumberVisible(true);
+  };
+
+  const handleVerifyAndGenerate = () => {
+    setVerifyNumberVisible(false);
+    
+    // Check if all players have the same cost
+    const hasDifferentCosts = playerCosts.some(cost => 
+      Math.abs(cost.total - playerCosts[0].total) > 0.01
+    );
+
+    if (hasDifferentCosts) {
+      const message = playerCosts.map(cost => 
+        `${cost.name}: ${cost.total.toFixed(2)} THB`
+      ).join('\n');
+      
+      setQrCodeData({ message });
+    } else {
+      setQrCodeData({ amount: playerCosts[0].total });
+    }
+    
+    setQrCodeVisible(true);
+  };
+
+  const generateQRPayload = () => {
+    if (!qrCodeData || !promptPayNumber) return '';
+    
+    if (qrCodeData.amount) {
+      // Generate QR with amount
+      return generatePayload(promptPayNumber, { amount: qrCodeData.amount });
+    } else {
+      // For different amounts, show 0 amount since players need to pay different amounts
+      return generatePayload(promptPayNumber, { amount: 0 });
+    }
+  };
+
+  const handleDownloadQR = () => {
+    const svg = document.getElementById('qr-code-svg');
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.download = 'promptpay-qr.png';
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+  };
+
+  const formatPhoneNumber = (input: string): string => {
+    try {
+      // Remove all non-digit characters
+      const digitsOnly = input.replace(/\D/g, '');
+      
+      // If it starts with '66', replace with '0'
+      if (digitsOnly.startsWith('66')) {
+        return '0' + digitsOnly.slice(2);
+      }
+      
+      // If it starts with '+66', replace with '0'
+      if (digitsOnly.startsWith('66')) {
+        return '0' + digitsOnly.slice(2);
+      }
+      
+      return digitsOnly;
+    } catch (error) {
+      return input;
+    }
+  };
+
+  const validatePromptPay = (number: string): boolean => {
+    // Must be exactly 10 digits
+    if (number.length !== 10) return false;
+
+    // Must start with '0'
+    if (!number.startsWith('0')) return false;
+
+    // Second digit must be 6, 8, 9 for mobile numbers
+    const secondDigit = parseInt(number[1]);
+    if (![6, 8, 9].includes(secondDigit)) return false;
+
+    // Must contain only digits
+    if (!/^\d+$/.test(number)) return false;
+
+    return true;
+  };
+
+  const handlePromptPayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedNumber = formatPhoneNumber(e.target.value);
+    setPromptPayNumber(formattedNumber);
+    setIsValidPromptPay(validatePromptPay(formattedNumber));
   };
 
   return (
@@ -121,6 +257,8 @@ export const BadmintonCostCalculator = ({
                   onChange={e => setNewPlayerName(e.target.value)}
                   className="w-40"
                   onPressEnter={handleAddPlayer}
+                  autoComplete="off"
+                  autoFocus={false}
                 />
                 <Button
                   type="primary"
@@ -414,31 +552,117 @@ export const BadmintonCostCalculator = ({
               <Input
                 placeholder="Enter your PromptPay number"
                 value={promptPayNumber}
-                onChange={e => setPromptPayNumber(e.target.value)}
+                onChange={handlePromptPayChange}
+                status={promptPayNumber && !isValidPromptPay ? 'error' : undefined}
+                maxLength={10}
+                pattern="[0-9]*"
+                type="tel"
               />
               <Button
                 type="primary"
                 icon={<QrcodeOutlined />}
-                onClick={handleGenerateQR}
+                onClick={handleGenerateQRCode}
+                disabled={!isValidPromptPay}
               >
-                Generate QR
+                Generate QR Code
               </Button>
             </Space.Compact>
-            {qrCodeUrl && (
-              <div className="mt-4 text-center">
-                <img src={qrCodeUrl} alt="PromptPay QR Code" className="mx-auto" />
-                <Button
-                  type="link"
-                  icon={<ShareAltOutlined />}
-                  onClick={() => {/* TODO: Implement sharing */}}
-                >
-                  Share QR Code
-                </Button>
-              </div>
+            {promptPayNumber && !isValidPromptPay && (
+              <Typography.Text type="danger" className="mt-1 block text-sm">
+                Please enter a valid Thai phone number
+              </Typography.Text>
             )}
           </div>
         </div>
       </div>
+
+      {/* Phone Number Verification Modal */}
+      <Modal
+        title="Verify PromptPay Number"
+        open={verifyNumberVisible}
+        onCancel={() => setVerifyNumberVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setVerifyNumberVisible(false)}>
+            Cancel
+          </Button>,
+          <Button key="confirm" type="primary" onClick={handleVerifyAndGenerate}>
+            Confirm & Generate QR
+          </Button>
+        ]}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <ExclamationCircleOutlined className="text-warning text-xl" />
+            <Typography.Text>Please verify your PromptPay number:</Typography.Text>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-lg text-center">
+            <Typography.Title level={3} className="!mb-1">
+              {promptPayNumber.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}
+            </Typography.Title>
+            <Typography.Text type="secondary">
+              Make sure this is the correct number to receive payment
+            </Typography.Text>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Existing QR Code Modal */}
+      <Modal
+        title="PromptPay QR Code"
+        open={qrCodeVisible}
+        onCancel={() => setQrCodeVisible(false)}
+        footer={[
+          <Button key="download" onClick={handleDownloadQR}>
+            Download QR Code
+          </Button>,
+          <Button key="close" onClick={() => setQrCodeVisible(false)}>
+            Close
+          </Button>
+        ]}
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
+              PromptPay Number
+            </label>
+            <Input
+              value={promptPayNumber}
+              onChange={handlePromptPayChange}
+              placeholder="Enter PromptPay number"
+              maxLength={10}
+              pattern="[0-9]*"
+              type="tel"
+              status={promptPayNumber && !isValidPromptPay ? 'error' : undefined}
+            />
+            {promptPayNumber && !isValidPromptPay && (
+              <Typography.Text type="danger" className="mt-1 block text-sm">
+                Please enter a valid Thai phone number
+              </Typography.Text>
+            )}
+          </div>
+
+          {promptPayNumber && isValidPromptPay && (
+            <div className="flex justify-center">
+              <div className="p-4 bg-white rounded-lg shadow-lg">
+                <QRCodeSVG
+                  id="qr-code-svg"
+                  value={generateQRPayload()}
+                  size={256}
+                  level="L"
+                  includeMargin={true}
+                />
+              </div>
+            </div>
+          )}
+
+          {qrCodeData?.message && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <Typography.Title level={5}>Payment Details:</Typography.Title>
+              <pre className="whitespace-pre-wrap">{qrCodeData.message}</pre>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }; 
