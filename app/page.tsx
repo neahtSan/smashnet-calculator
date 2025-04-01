@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Input, Button, List, Card, Modal, Form, message, Avatar, Space, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined, UndoOutlined } from '@ant-design/icons';
 import { Player, Match, PlayerStats } from '@/types/interface';
 import { findBestMatch, updatePlayerStats, findFirstMatch, findSecondMatch } from '@/utils/matchmaker';
 
@@ -18,6 +18,8 @@ export default function Home() {
   const [isFinishModalVisible, setIsFinishModalVisible] = useState(false);
   const [isResultsVisible, setIsResultsVisible] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
+  const [isRevertModalVisible, setIsRevertModalVisible] = useState(false);
+  const [matchToRevert, setMatchToRevert] = useState<string | null>(null);
 
   useEffect(() => {
     // Enable button and reset matches when player count changes
@@ -249,6 +251,68 @@ const handleCreateMatch = () => {
     localStorage.removeItem('smashnet_stats');
   };
 
+  const handleRevertMatch = (matchId: string) => {
+    const matchIndex = matches.findIndex(m => m.id === matchId);
+    if (matchIndex <= 0) return; // Cannot revert match 1
+
+    setMatchToRevert(matchId);
+    setIsRevertModalVisible(true);
+  };
+
+  const handleConfirmRevert = () => {
+    if (!matchToRevert) return;
+
+    const matchIndex = matches.findIndex(m => m.id === matchToRevert);
+    if (matchIndex <= 0) return; // Safety check
+
+    // Get all matches from the revert point onwards
+    const matchesToRevert = matches.slice(matchIndex);
+    
+    // Create a copy of players to revert their stats
+    let updatedPlayers = [...players];
+
+    // Revert stats for each match that will be removed
+    matchesToRevert.forEach(match => {
+      if (match.winner) {
+        // Find all players in the match
+        const allPlayers = [...match.team1, ...match.team2];
+        
+        // Revert stats for each player
+        updatedPlayers = updatedPlayers.map(player => {
+          const isInMatch = allPlayers.some(p => p.id === player.id);
+          if (!isInMatch) return player;
+
+          const isInWinningTeam = 
+            (match.winner === 'team1' && match.team1.some(p => p.id === player.id)) ||
+            (match.winner === 'team2' && match.team2.some(p => p.id === player.id));
+
+          return {
+            ...player,
+            wins: isInWinningTeam ? player.wins - 1 : player.wins,
+            losses: !isInWinningTeam ? player.losses - 1 : player.losses,
+            matches: player.matches - 1
+          };
+        });
+      }
+    });
+
+    // Remove all matches after and including the reverted match
+    const updatedMatches = matches.slice(0, matchIndex);
+
+    // Check if the last remaining match has a winner
+    const lastMatch = updatedMatches[updatedMatches.length - 1];
+    const shouldEnableCreateButton = !lastMatch || lastMatch.winner !== null;
+
+    // Update state
+    setPlayers(updatedPlayers);
+    setMatches(updatedMatches);
+    setMatchToRevert(null);
+    setIsRevertModalVisible(false);
+    setIsMatchButtonDisabled(!shouldEnableCreateButton);
+
+    message.success('Match reverted successfully');
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center py-8">
       <div className="w-full max-w-md px-4">
@@ -351,7 +415,19 @@ const handleCreateMatch = () => {
             return (
               <Card 
                 key={currentMatch.id} 
-                title={`Match ${matches.length}`}
+                title={
+                  <div className="flex justify-between items-center">
+                    <span>Match {matches.length}</span>
+                    {matches.length > 1 && !currentMatch.winner && (
+                      <Button
+                        icon={<UndoOutlined />}
+                        onClick={() => handleRevertMatch(currentMatch.id)}
+                        type="text"
+                        className="text-gray-500 hover:text-blue-500"
+                      />
+                    )}
+                  </div>
+                }
                 className="shadow-md"
               >
                 <div className="space-y-4">
@@ -547,6 +623,26 @@ const handleCreateMatch = () => {
             </List.Item>
           )}
         />
+      </Modal>
+
+      {/* Revert Match Confirmation Modal */}
+      <Modal
+        title="Revert Match"
+        open={isRevertModalVisible}
+        onOk={handleConfirmRevert}
+        onCancel={() => {
+          setIsRevertModalVisible(false);
+          setMatchToRevert(null);
+        }}
+        okText="Yes, Revert"
+        cancelText="No, Keep Current"
+      >
+        <p>Are you sure you want to revert this match? This will:</p>
+        <ul className="list-disc ml-6 mt-2">
+          <li>Remove this match and any matches after it</li>
+          <li>Revert all player statistics for these matches</li>
+          <li>This action cannot be undone</li>
+        </ul>
       </Modal>
     </main>
   );
