@@ -11,6 +11,8 @@ export interface PlayerStats {
   wins: number;
   losses: number;
   winRate: number;
+  totalMatches: number;
+  rank: number;
 }
 
 export interface Match {

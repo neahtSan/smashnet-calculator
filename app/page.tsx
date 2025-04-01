@@ -195,26 +195,48 @@ const handleCreateMatch = () => {
         name: player.name,
         wins: player.wins,
         losses: player.losses,
-        winRate
+        winRate,
+        totalMatches: player.matches
       };
     });
 
-    // Sort by win rate (descending) and then by wins (descending) for tie-breaking
+    // Sort by win rate (descending), then total matches (descending), then name (ascending)
     const sortedStats = stats.sort((a, b) => {
+      // Different win rates - sort by win rate
       if (b.winRate !== a.winRate) {
         return b.winRate - a.winRate;
       }
-      return b.wins - a.wins;
+      // Same win rate - sort by total matches
+      if (b.totalMatches !== a.totalMatches) {
+        return b.totalMatches - a.totalMatches;
+      }
+      // Same win rate and total matches - sort by name
+      return a.name.localeCompare(b.name);
     });
 
-    setPlayerStats(sortedStats);
+    // Calculate ranks (only rank 1 can be shared)
+    const highestWinRate = sortedStats[0].winRate;
+    let currentRank = 1;
+    const statsWithRanks = sortedStats.map((player, index) => {
+      if (index === 0 || (player.winRate === highestWinRate)) {
+        // First place or tied for first
+        return { ...player, rank: 1 };
+      } else {
+        // Count how many players are tied for first
+        const tiedForFirstCount = sortedStats.filter(p => p.winRate === highestWinRate).length;
+        // For players not in first place, their rank starts after all tied first place players
+        return { ...player, rank: index + 1 };
+      }
+    });
+
+    setPlayerStats(statsWithRanks);
     setIsFinishModalVisible(false);
     setIsResultsVisible(true);
 
     // Save to localStorage
     localStorage.setItem('smashnet_matches', JSON.stringify(matches));
     localStorage.setItem('smashnet_players', JSON.stringify(players));
-    localStorage.setItem('smashnet_stats', JSON.stringify(sortedStats));
+    localStorage.setItem('smashnet_stats', JSON.stringify(statsWithRanks));
   };
 
   const handleRestartTournament = () => {
@@ -471,12 +493,12 @@ const handleCreateMatch = () => {
       >
         <List
           dataSource={playerStats}
-          renderItem={(player, index) => (
+          renderItem={(player: PlayerStats & { rank: number }, index) => (
             <List.Item>
               <List.Item.Meta
                 avatar={
                   <div className="relative">
-                    {index === 0 && (
+                    {player.rank === 1 && (
                       <div 
                         className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10"
                         style={{ color: '#eb2f96' }}
@@ -487,16 +509,16 @@ const handleCreateMatch = () => {
                     <Avatar 
                       size="large" 
                       icon={<UserOutlined />}
-                      style={{ backgroundColor: index === 0 ? '#eb2f96' : '#1890ff' }}
+                      style={{ backgroundColor: player.rank === 1 ? '#eb2f96' : '#1890ff' }}
                     />
                   </div>
                 }
                 title={
                   <Space>
                     <span className="text-lg font-semibold">
-                      {index + 1}. {player.name}
+                      {player.rank}. {player.name}
                     </span>
-                    {index === 0 && <TrophyOutlined style={{ color: '#eb2f96' }} />}
+                    {player.rank === 1 && <TrophyOutlined style={{ color: '#eb2f96' }} />}
                   </Space>
                 }
                 description={
