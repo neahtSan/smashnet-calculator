@@ -21,6 +21,8 @@ export default function Home() {
   const [isRevertModalVisible, setIsRevertModalVisible] = useState(false);
   const [matchToRevert, setMatchToRevert] = useState<string | null>(null);
   const [selectedWinner, setSelectedWinner] = useState<'team1' | 'team2' | null>(null);
+  const [playerToDelete, setPlayerToDelete] = useState<string | null>(null);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
   useEffect(() => {
     // Enable button and reset matches when player count changes
@@ -83,83 +85,91 @@ export default function Home() {
     form.resetFields();
   };
 
-  const handleDeletePlayer = (playerId: string) => {
-    const updatedPlayers = players.filter(p => p.id !== playerId);
+  const handleDeleteClick = (playerId: string) => {
+    setPlayerToDelete(playerId);
+    setIsDeleteModalVisible(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!playerToDelete) return;
+    
+    const updatedPlayers = players.filter(p => p.id !== playerToDelete);
     setPlayers(updatedPlayers);
   
     // If a player from an active match was removed, clear unfinished matches
     const updatedMatches = matches.filter(match => 
-      match.team1.every(player => player.id !== playerId) &&
-      match.team2.every(player => player.id !== playerId)
+      match.team1.every(player => player.id !== playerToDelete) &&
+      match.team2.every(player => player.id !== playerToDelete)
     );
     
     setMatches(updatedMatches);
+    setIsDeleteModalVisible(false);
+    setPlayerToDelete(null);
   };
-  
 
-const handleCreateMatch = () => {
-  if (players.length < 4) {
-    message.error('Need at least 4 players to create a match');
-    return;
-  }
-
-  try {
-    let selectedPlayers: [Player, Player, Player, Player];
-
-    if (matches.length === 0) {
-      console.log('Creating first match');
-      selectedPlayers = findFirstMatch(players);
-    } else if (matches.length === 1 && matches[0].winner) {
-      console.log('Creating second match');
-      selectedPlayers = findSecondMatch(players, matches[0]);
-    } else {
-      console.log('Creating subsequent match');
-      
-      // Get players who haven't played in recent matches
-      const recentMatches = matches.slice(-3); // Look at last 3 matches
-      const availablePlayers = players.filter(p => 
-        !recentMatches.some(match => 
-          match.team1.includes(p) || match.team2.includes(p)
-        )
-      );
-
-      // If we have enough players who haven't played recently, prioritize them
-      if (availablePlayers.length >= 4) {
-        console.log('Using players who haven\'t played recently');
-        selectedPlayers = findFirstMatch(availablePlayers);
-      } else {
-        // If not enough available players, try to find the best match
-        // while still considering player history and win rates
-        console.log('Finding best match with all players');
-        selectedPlayers = findBestMatch(players, matches);
-      }
+  const handleCreateMatch = () => {
+    if (players.length < 4) {
+      message.error('Need at least 4 players to create a match');
+      return;
     }
 
-    console.log('Selected players:', { 
-      team1Player1: selectedPlayers[0], 
-      team1Player2: selectedPlayers[1], 
-      team2Player1: selectedPlayers[2], 
-      team2Player2: selectedPlayers[3] 
-    });
+    try {
+      let selectedPlayers: [Player, Player, Player, Player];
 
-    const newMatch: Match = {
-      id: Date.now().toString(),
-      team1: [selectedPlayers[0], selectedPlayers[1]],
-      team2: [selectedPlayers[2], selectedPlayers[3]],
-      winner: null,
-      timestamp: Date.now(),
-    };
+      if (matches.length === 0) {
+        console.log('Creating first match');
+        selectedPlayers = findFirstMatch(players);
+      } else if (matches.length === 1 && matches[0].winner) {
+        console.log('Creating second match');
+        selectedPlayers = findSecondMatch(players, matches[0]);
+      } else {
+        console.log('Creating subsequent match');
+        
+        // Get players who haven't played in recent matches
+        const recentMatches = matches.slice(-3); // Look at last 3 matches
+        const availablePlayers = players.filter(p => 
+          !recentMatches.some(match => 
+            match.team1.includes(p) || match.team2.includes(p)
+          )
+        );
 
-    console.log('New match:', newMatch);
-    setMatches([...matches, newMatch]);
-    setIsCreatingMatch(false);
-    setIsMatchButtonDisabled(true); // Disable button after creating a match
-  } catch (error) {
-    console.error('Error creating match:', error);
-    message.error('Error creating match');
-    setIsCreatingMatch(false);
-  }
-};
+        // If we have enough players who haven't played recently, prioritize them
+        if (availablePlayers.length >= 4) {
+          console.log('Using players who haven\'t played recently');
+          selectedPlayers = findFirstMatch(availablePlayers);
+        } else {
+          // If not enough available players, try to find the best match
+          // while still considering player history and win rates
+          console.log('Finding best match with all players');
+          selectedPlayers = findBestMatch(players, matches);
+        }
+      }
+
+      console.log('Selected players:', { 
+        team1Player1: selectedPlayers[0], 
+        team1Player2: selectedPlayers[1], 
+        team2Player1: selectedPlayers[2], 
+        team2Player2: selectedPlayers[3] 
+      });
+
+      const newMatch: Match = {
+        id: Date.now().toString(),
+        team1: [selectedPlayers[0], selectedPlayers[1]],
+        team2: [selectedPlayers[2], selectedPlayers[3]],
+        winner: null,
+        timestamp: Date.now(),
+      };
+
+      console.log('New match:', newMatch);
+      setMatches([...matches, newMatch]);
+      setIsCreatingMatch(false);
+      setIsMatchButtonDisabled(true); // Disable button after creating a match
+    } catch (error) {
+      console.error('Error creating match:', error);
+      message.error('Error creating match');
+      setIsCreatingMatch(false);
+    }
+  };
 
   const handleUpdateMatchResult = (matchId: string, winner: 'team1' | 'team2') => {
     const match = matches.find(m => m.id === matchId);
@@ -330,6 +340,19 @@ const handleCreateMatch = () => {
         <div className="bg-white rounded-lg shadow-md p-4 mb-4">
           <h1 className="text-xl font-bold text-center text-gray-800 mb-4">Smashnet Matchmaker</h1>
           
+          {players.length < 4 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+              <p className="text-sm text-blue-700 text-center">
+                Please add at least 4 players to start a match.
+                {players.length >= 7 ? (
+                  <span className="block mt-1">Maximum number of players (7) reached.</span>
+                ) : (
+                  <span className="block mt-1">You can add up to 7 players.</span>
+                )}
+              </p>
+            </div>
+          )}
+          
           <Button 
             type="primary" 
             icon={<PlusOutlined />} 
@@ -337,7 +360,7 @@ const handleCreateMatch = () => {
             className="w-full mb-4"
             disabled={players.length >= 7}
           >
-            Add Player
+            Add Player {players.length >= 7 ? "(Max 7)" : ""}
           </Button>
 
           <List
@@ -365,7 +388,7 @@ const handleCreateMatch = () => {
                         key="delete" 
                         danger 
                         icon={<DeleteOutlined style={{ fontSize: '16px' }} />} 
-                        onClick={() => handleDeletePlayer(player.id)}
+                        onClick={() => handleDeleteClick(player.id)}
                         className="flex items-center justify-center !w-8 !h-8 !min-w-0"
                       />
                     </div>
@@ -569,7 +592,11 @@ const handleCreateMatch = () => {
               }
             ]}
           >
-            <Input maxLength={32} />
+            <Input 
+              maxLength={32} 
+              className="text-base" 
+              style={{ fontSize: '16px' }}
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -659,6 +686,27 @@ const handleCreateMatch = () => {
             </List.Item>
           )}
         />
+      </Modal>
+
+      {/* Delete Player Confirmation Modal */}
+      <Modal
+        title="Delete Player"
+        open={isDeleteModalVisible}
+        onOk={handleConfirmDelete}
+        onCancel={() => {
+          setIsDeleteModalVisible(false);
+          setPlayerToDelete(null);
+        }}
+        okText="Yes, Delete"
+        cancelText="No, Keep Player"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Are you sure you want to delete this player? This will:</p>
+        <ul className="list-disc ml-6 mt-2">
+          <li>Remove the player from the tournament</li>
+          <li>Remove any unfinished matches they are part of</li>
+          <li>This action cannot be undone</li>
+        </ul>
       </Modal>
 
       {/* Revert Match Confirmation Modal */}
