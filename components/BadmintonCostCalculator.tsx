@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Form, Input, Button, InputNumber, List, Typography, Space, Divider, Select, Modal } from 'antd';
-import { DeleteOutlined, PlusOutlined, QrcodeOutlined, ShareAltOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, QrcodeOutlined, ShareAltOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined, ExclamationCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import { PlayerStats, CourtFee, Shuttlecock, CustomExpense, BadmintonCostCalculatorProps } from '@/interface';
 import { QRCodeSVG } from 'qrcode.react';
 import generatePayload from 'promptpay-qr';
@@ -309,17 +309,9 @@ export const BadmintonCostCalculator = ({
                   className="w-full [&_input]:!outline-none [&_input]:!ring-0"
                   prefix="฿"
                   min={0}
-                  onFocus={(e) => {
-                    e.target.select();
-                    if (courtFee.hourlyRate === 0) {
-                      setCourtFee({ ...courtFee, hourlyRate: 0 });
-                    }
-                  }}
-                  onBlur={(e) => {
-                    if (!e.target.value) {
-                      setCourtFee({ ...courtFee, hourlyRate: 0 });
-                    }
-                  }}
+                  pattern="[0-9]*"
+                  type="number"
+                  controls={false}
                 />
               </div>
               <div className="flex-1">
@@ -331,17 +323,9 @@ export const BadmintonCostCalculator = ({
                   className="w-full [&_input]:!outline-none [&_input]:!ring-0"
                   min={0}
                   step={0.5}
-                  onFocus={(e) => {
-                    e.target.select();
-                    if (courtFee.hours === 0) {
-                      setCourtFee({ ...courtFee, hours: 0 });
-                    }
-                  }}
-                  onBlur={(e) => {
-                    if (!e.target.value) {
-                      setCourtFee({ ...courtFee, hours: 0 });
-                    }
-                  }}
+                  pattern="[0-9]*"
+                  type="number"
+                  controls={false}
                 />
               </div>
             </div>
@@ -366,17 +350,9 @@ export const BadmintonCostCalculator = ({
                   className="w-full [&_input]:!outline-none [&_input]:!ring-0"
                   prefix="฿"
                   min={0}
-                  onFocus={(e) => {
-                    e.target.select();
-                    if (shuttlecock.pricePerPiece === 0) {
-                      setShuttlecock({ ...shuttlecock, pricePerPiece: 0 });
-                    }
-                  }}
-                  onBlur={(e) => {
-                    if (!e.target.value) {
-                      setShuttlecock({ ...shuttlecock, pricePerPiece: 0 });
-                    }
-                  }}
+                  pattern="[0-9]*"
+                  type="number"
+                  controls={false}
                 />
               </div>
               <div className="flex-1">
@@ -387,17 +363,9 @@ export const BadmintonCostCalculator = ({
                   onChange={value => setShuttlecock({ ...shuttlecock, quantity: value || 0 })}
                   className="w-full [&_input]:!outline-none [&_input]:!ring-0"
                   min={0}
-                  onFocus={(e) => {
-                    e.target.select();
-                    if (shuttlecock.quantity === 0) {
-                      setShuttlecock({ ...shuttlecock, quantity: 0 });
-                    }
-                  }}
-                  onBlur={(e) => {
-                    if (!e.target.value) {
-                      setShuttlecock({ ...shuttlecock, quantity: 0 });
-                    }
-                  }}
+                  pattern="[0-9]*"
+                  type="number"
+                  controls={false}
                 />
               </div>
             </div>
@@ -437,17 +405,9 @@ export const BadmintonCostCalculator = ({
                     className="w-32 [&_input]:!outline-none [&_input]:!ring-0"
                     prefix="฿"
                     min={0}
-                    onFocus={(e) => {
-                      e.target.select();
-                      if (expense.amount === 0) {
-                        handleCustomExpenseChange(expense.id, 'amount', 0);
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (!e.target.value) {
-                        handleCustomExpenseChange(expense.id, 'amount', 0);
-                      }
-                    }}
+                    pattern="[0-9]*"
+                    type="number"
+                    controls={false}
                   />
                   <Button
                     type="text"
@@ -580,23 +540,28 @@ export const BadmintonCostCalculator = ({
       <Modal
         title="Verify PromptPay Number"
         open={verifyNumberVisible}
-        onCancel={() => setVerifyNumberVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setVerifyNumberVisible(false)}>
-            Cancel
-          </Button>,
-          <Button key="confirm" type="primary" onClick={handleVerifyAndGenerate}>
-            Confirm & Generate QR
-          </Button>
-        ]}
+        closable={false}
+        maskClosable={false}
+        centered
+        className="verification-modal"
+        footer={
+          <div className="flex justify-between">
+            <Button danger onClick={() => setVerifyNumberVisible(false)}>
+              Cancel
+            </Button>
+            <Button type="primary" onClick={handleVerifyAndGenerate}>
+              Confirm & Generate QR
+            </Button>
+          </div>
+        }
       >
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <ExclamationCircleOutlined className="text-warning text-xl" />
-            <Typography.Text>Please verify your PromptPay number:</Typography.Text>
+            <Typography.Text strong>Please verify your PromptPay number:</Typography.Text>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg text-center">
-            <Typography.Title level={3} className="!mb-1">
+          <div className="p-6 bg-gray-50 rounded-lg text-center">
+            <Typography.Title level={3} className="!mb-2">
               {promptPayNumber.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}
             </Typography.Title>
             <Typography.Text type="secondary">
@@ -606,44 +571,38 @@ export const BadmintonCostCalculator = ({
         </div>
       </Modal>
 
-      {/* Existing QR Code Modal */}
+      {/* QR Code Modal */}
       <Modal
         title="PromptPay QR Code"
         open={qrCodeVisible}
-        onCancel={() => setQrCodeVisible(false)}
-        footer={[
-          <Button key="download" onClick={handleDownloadQR}>
-            Download QR Code
-          </Button>,
-          <Button key="close" onClick={() => setQrCodeVisible(false)}>
-            Close
-          </Button>
-        ]}
+        closable={false}
+        maskClosable={false}
+        centered
+        className="qr-code-modal"
+        footer={
+          <div className="flex justify-between">
+            <Button danger onClick={() => setQrCodeVisible(false)}>
+              Close
+            </Button>
+            <Button type="primary" onClick={handleDownloadQR} icon={<DownloadOutlined />}>
+              Download QR Code
+            </Button>
+          </div>
+        }
       >
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">
-              PromptPay Number
-            </label>
-            <Input
-              value={promptPayNumber}
-              onChange={handlePromptPayChange}
-              placeholder="Enter PromptPay number"
-              maxLength={10}
-              pattern="[0-9]*"
-              type="tel"
-              status={promptPayNumber && !isValidPromptPay ? 'error' : undefined}
-            />
-            {promptPayNumber && !isValidPromptPay && (
-              <Typography.Text type="danger" className="mt-1 block text-sm">
-                Please enter a valid Thai phone number
+        <div className="space-y-6">
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="mb-2">
+              <Typography.Text type="secondary" className="text-sm">PromptPay Number:</Typography.Text>
+              <Typography.Text strong className="ml-2">
+                {promptPayNumber.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}
               </Typography.Text>
-            )}
+            </div>
           </div>
 
           {promptPayNumber && isValidPromptPay && (
             <div className="flex justify-center">
-              <div className="p-4 bg-white rounded-lg shadow-lg">
+              <div className="p-6 bg-white rounded-lg shadow-lg">
                 <QRCodeSVG
                   id="qr-code-svg"
                   value={generateQRPayload()}
@@ -655,12 +614,36 @@ export const BadmintonCostCalculator = ({
             </div>
           )}
 
-          {qrCodeData?.message && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <Typography.Title level={5}>Payment Details:</Typography.Title>
-              <pre className="whitespace-pre-wrap">{qrCodeData.message}</pre>
+          <div className="p-6 bg-gray-50 rounded-lg">
+            <Typography.Title level={5} className="!mb-3">Payment Details</Typography.Title>
+            <div className="space-y-4">
+              {playerCosts.map(cost => (
+                <div key={cost.name} className="flex flex-col">
+                  <div className="flex justify-between items-center">
+                    <Typography.Text strong>{cost.name}</Typography.Text>
+                    <Typography.Text type="success" strong>฿{cost.total.toFixed(2)}</Typography.Text>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    <div className="flex justify-between">
+                      <span>Shared Cost:</span>
+                      <span>฿{cost.sharedCost.toFixed(2)}</span>
+                    </div>
+                    {cost.customExpenses > 0 && (
+                      <div className="flex justify-between">
+                        <span>Additional Expenses:</span>
+                        <span>฿{cost.customExpenses.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <Divider className="!my-4" />
+              <div className="flex justify-between items-center">
+                <Typography.Text strong>Total Cost:</Typography.Text>
+                <Typography.Text type="success" strong>฿{totalCost.toFixed(2)}</Typography.Text>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </Modal>
     </div>
