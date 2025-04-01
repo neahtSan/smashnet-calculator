@@ -1,4 +1,4 @@
-import { Modal, Typography } from 'antd';
+import { Modal, Typography, Button } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 
 interface VerificationModalProps {
@@ -18,26 +18,42 @@ export const VerificationModal = ({
     <Modal
       title="Verify PromptPay Number"
       open={visible}
-      onCancel={onCancel}
-      onOk={onConfirm}
-      okText="Confirm & Generate QR"
-      cancelText="Cancel"
+      closable={false}
+      maskClosable={false}
       centered
+      className="verification-modal"
+      footer={
+        <div className="flex justify-between gap-4">
+          <Button 
+            danger 
+            onClick={onCancel}
+            className="px-8 h-10 text-base"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="primary" 
+            onClick={onConfirm}
+            className="px-8 h-10 text-base"
+          >
+            Confirm
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4">
-        <Typography.Paragraph>
-          Please verify your PromptPay number before generating the QR code:
-        </Typography.Paragraph>
-
-        <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <div className="flex items-center gap-2">
+          <ExclamationCircleOutlined className="text-blue-500 text-xl" />
+          <Typography.Text strong>Please verify your PromptPay number:</Typography.Text>
+        </div>
+        <div className="p-6 bg-blue-50 rounded-lg border border-blue-200">
           <div className="flex items-start">
-            <ExclamationCircleOutlined className="text-yellow-500 mt-1" />
             <div className="ml-3">
-              <Typography.Text strong className="text-lg block">
+              <Typography.Title level={3} className="!mb-2 text-blue-600">
                 {promptPayNumber.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}
-              </Typography.Text>
-              <Typography.Text type="warning" className="block mt-1">
-                Please ensure this number is correct. The QR code will be generated for this PromptPay number.
+              </Typography.Title>
+              <Typography.Text className="block mt-1 text-blue-600">
+                Make sure this is the correct number to receive payment
               </Typography.Text>
             </div>
           </div>

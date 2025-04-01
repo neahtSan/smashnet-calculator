@@ -15,6 +15,7 @@ export interface CustomExpense {
   name: string;
   amount: number;
   assignedTo: string[];
+  isShared: boolean;
 }
 
 export interface BadmintonCostCalculatorProps {

@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Form, Input, Button, InputNumber, List, Typography, Space, Divider, Select, Modal, message, Spin } from 'antd';
-import { DeleteOutlined, PlusOutlined, QrcodeOutlined, ShareAltOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined, ExclamationCircleOutlined, DownloadOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { Input, Button, List, Typography, Space, Divider } from 'antd';
+import { ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import { PlayerStats, CourtFee, Shuttlecock, CustomExpense, BadmintonCostCalculatorProps } from '@/interface';
-import { QRCodeSVG } from 'qrcode.react';
-import generatePayload from 'promptpay-qr';
+import { CostBreakdown } from './BadmintonCalculator/CostBreakdown';
+import { AdditionalExpenses } from './BadmintonCalculator/AdditionalExpenses';
+import { CourtFeeSection } from './BadmintonCalculator/CourtFeeSection';
+import { ShuttlecockSection } from './BadmintonCalculator/ShuttlecockSection';
+import { PromptPaySection } from './BadmintonCalculator/PromptPaySection';
 
 export const BadmintonCostCalculator = ({
   isVisible,
@@ -11,7 +14,6 @@ export const BadmintonCostCalculator = ({
   players: initialPlayers,
   onBackToResults
 }: BadmintonCostCalculatorProps) => {
-  const [form] = Form.useForm();
   const [players, setPlayers] = useState<PlayerStats[]>(initialPlayers);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [courtFee, setCourtFee] = useState<CourtFee>({
@@ -23,33 +25,48 @@ export const BadmintonCostCalculator = ({
     pricePerPiece: 0
   });
   const [customExpenses, setCustomExpenses] = useState<CustomExpense[]>([]);
-  const [promptPayNumber, setPromptPayNumber] = useState<string>('');
-  const [qrCodeVisible, setQrCodeVisible] = useState(false);
-  const [qrCodeData, setQrCodeData] = useState<{ amount?: number; message?: string } | null>(null);
-  const [isValidPromptPay, setIsValidPromptPay] = useState(false);
-  const [verifyNumberVisible, setVerifyNumberVisible] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
 
   const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
   const totalShuttlecockCost = shuttlecock.quantity * shuttlecock.pricePerPiece;
   const sharedCost = totalCourtFee + totalShuttlecockCost;
   const sharedCostPerPlayer = players.length > 0 ? sharedCost / players.length : 0;
   
-  // Calculate individual costs including custom expenses
+  // Calculate individual costs including custom expenses and unassigned expenses
   const playerCosts = players.map(player => {
-    const playerCustomExpenses = customExpenses
+    // Get expenses specifically assigned to this player
+    const assignedExpenses = customExpenses
       .filter(expense => expense.assignedTo.includes(player.name))
+      .reduce((sum, expense) => sum + expense.amount, 0);
+    
+    // Get unassigned expenses
+    const unassignedExpenses = customExpenses.filter(expense => expense.assignedTo.length === 0);
+    
+    // Calculate shared unassigned expenses
+    const sharedUnassignedExpenses = unassignedExpenses
+      .filter(expense => expense.isShared)
+      .reduce((sum, expense) => sum + expense.amount, 0);
+    const sharedUnassignedExpensesPerPlayer = players.length > 0 ? sharedUnassignedExpenses / players.length : 0;
+    
+    // Calculate full unassigned expenses (each player pays full amount)
+    const fullUnassignedExpenses = unassignedExpenses
+      .filter(expense => !expense.isShared)
       .reduce((sum, expense) => sum + expense.amount, 0);
     
     return {
       name: player.name,
       sharedCost: sharedCostPerPlayer,
-      customExpenses: playerCustomExpenses,
-      total: sharedCostPerPlayer + playerCustomExpenses
+      customExpenses: assignedExpenses + sharedUnassignedExpensesPerPlayer + fullUnassignedExpenses,
+      total: sharedCostPerPlayer + assignedExpenses + sharedUnassignedExpensesPerPlayer + fullUnassignedExpenses
     };
   });
 
-  const totalCustomExpenses = customExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalCustomExpenses = customExpenses.reduce((sum, expense) => {
+    // For unassigned expenses that are not shared, multiply by number of players
+    if (expense.assignedTo.length === 0 && !expense.isShared) {
+      return sum + (expense.amount * players.length);
+    }
+    return sum + expense.amount;
+  }, 0);
   const totalCost = sharedCost + totalCustomExpenses;
 
   const handleAddPlayer = () => {
@@ -68,254 +85,6 @@ export const BadmintonCostCalculator = ({
 
   const handleRemovePlayer = (playerName: string) => {
     setPlayers(players.filter(player => player.name !== playerName));
-  };
-
-  const handleAddCustomExpense = () => {
-    const newExpense: CustomExpense = {
-      id: Date.now().toString(),
-      name: 'Expense',
-      amount: 0,
-      assignedTo: []
-    };
-    setCustomExpenses([...customExpenses, newExpense]);
-  };
-
-  const handleDeleteCustomExpense = (id: string) => {
-    setCustomExpenses(customExpenses.filter(expense => expense.id !== id));
-  };
-
-  const handleCustomExpenseChange = (
-    id: string,
-    field: 'name' | 'amount' | 'assignedTo',
-    value: string | number | string[]
-  ) => {
-    setCustomExpenses(customExpenses.map(expense =>
-      expense.id === id ? { ...expense, [field]: value } : expense
-    ));
-  };
-
-  const calculateTotalCost = (values: any) => {
-    const courtFee = values.courtFee || { hourlyRate: 0, hours: 0 };
-    const shuttlecock = values.shuttlecock || { quantity: 0, pricePerPiece: 0 };
-    const customExpenses = values.customExpenses || [];
-
-    const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
-    const totalShuttlecock = shuttlecock.quantity * shuttlecock.pricePerPiece;
-    const totalCustomExpenses = customExpenses.reduce((sum: number, expense: CustomExpense) => sum + expense.amount, 0);
-
-    return totalCourtFee + totalShuttlecock + totalCustomExpenses;
-  };
-
-  const calculatePlayerCost = (values: any, playerName: string) => {
-    const totalCost = calculateTotalCost(values);
-    const customExpenses = values.customExpenses || [];
-    
-    // Calculate player's share of custom expenses
-    const playerCustomExpenses = customExpenses.reduce((sum: number, expense: CustomExpense) => {
-      if (expense.assignedTo.includes(playerName)) {
-        return sum + (expense.amount / expense.assignedTo.length);
-      }
-      return sum;
-    }, 0);
-
-    // Calculate player's share of common expenses (court fee and shuttlecock)
-    const commonExpenses = totalCost - playerCustomExpenses;
-    const commonExpenseShare = commonExpenses / players.length;
-
-    return commonExpenseShare + playerCustomExpenses;
-  };
-
-  const handleGenerateQRCode = () => {
-    // Show verification modal first
-    setVerifyNumberVisible(true);
-  };
-
-  const handleVerifyAndGenerate = () => {
-    setVerifyNumberVisible(false);
-    
-    // Check if all players have the same cost
-    const hasDifferentCosts = playerCosts.some(cost => 
-      Math.abs(cost.total - playerCosts[0].total) > 0.01
-    );
-
-    if (hasDifferentCosts) {
-      const message = playerCosts.map(cost => 
-        `${cost.name}: ${cost.total.toFixed(2)} THB`
-      ).join('\n');
-      
-      setQrCodeData({ message });
-    } else {
-      setQrCodeData({ amount: playerCosts[0].total });
-    }
-    
-    setQrCodeVisible(true);
-  };
-
-  const generateQRPayload = () => {
-    if (!qrCodeData || !promptPayNumber) return '';
-    
-    if (qrCodeData.amount) {
-      // Generate QR with amount
-      return generatePayload(promptPayNumber, { amount: qrCodeData.amount });
-    } else {
-      // For different amounts, show 0 amount since players need to pay different amounts
-      return generatePayload(promptPayNumber, { amount: 0 });
-    }
-  };
-
-  const handleDownloadQR = async () => {
-    try {
-      setIsDownloading(true);
-      const svg = document.getElementById('qr-code-svg');
-      if (!svg) {
-        message.error('QR code not found');
-        return;
-      }
-
-      // Create a canvas with padding and background
-      const padding = 40;
-      const canvas = document.createElement('canvas');
-      const svgWidth = svg.clientWidth || 256;
-      const svgHeight = svg.clientHeight || 256;
-      canvas.width = svgWidth + (padding * 2);
-      canvas.height = svgHeight + (padding * 2);
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        message.error('Could not create image');
-        return;
-      }
-
-      // Fill white background
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Convert SVG to image
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const img = new Image();
-      
-      // Create a promise to handle the image loading
-      await new Promise((resolve, reject) => {
-        img.onload = async () => {
-          try {
-            // Draw image with padding
-            ctx.drawImage(img, padding, padding, svgWidth, svgHeight);
-            
-            // Convert to blob and handle download/share
-            const blob = await new Promise<Blob | null>((resolve) => {
-              canvas.toBlob(resolve, 'image/png');
-            });
-
-            if (!blob) {
-              reject(new Error('Could not create image file'));
-              return;
-            }
-
-            // Check if running on iOS
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            
-            if (isIOS) {
-              // For iOS: Create data URL for the image
-              const imageUrl = URL.createObjectURL(blob);
-              
-              // Create a modal to show the image with save instructions
-              Modal.info({
-                title: 'Save QR Code',
-                content: (
-                  <div className="text-center">
-                    <img 
-                      src={imageUrl} 
-                      alt="PromptPay QR Code" 
-                      style={{ maxWidth: '100%', height: 'auto' }}
-                      onLoad={() => URL.revokeObjectURL(imageUrl)}
-                    />
-                    <Typography.Text className="block mt-4">
-                      Press and hold the QR code image, then tap "Save Image" to download it to your Photos.
-                    </Typography.Text>
-                  </div>
-                ),
-                okText: 'Done',
-                className: 'save-qr-modal',
-                centered: true,
-                maskClosable: true
-              });
-              
-              message.success('Long press the QR code to save it');
-            } else {
-              // For other devices: Normal download
-              const url = window.URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = `promptpay-${promptPayNumber}.png`;
-              link.click();
-              window.URL.revokeObjectURL(url);
-              message.success('QR code downloaded successfully');
-            }
-
-            resolve(true);
-          } catch (error) {
-            reject(error);
-          }
-        };
-
-        img.onerror = () => reject(new Error('Failed to load QR code'));
-
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(svgBlob);
-        img.src = url;
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-      });
-
-    } catch (error) {
-      console.error('Error downloading QR:', error);
-      message.error('Failed to download QR code');
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const formatPhoneNumber = (input: string): string => {
-    try {
-      // Remove all non-digit characters
-      const digitsOnly = input.replace(/\D/g, '');
-      
-      // If it starts with '66', replace with '0'
-      if (digitsOnly.startsWith('66')) {
-        return '0' + digitsOnly.slice(2);
-      }
-      
-      // If it starts with '+66', replace with '0'
-      if (digitsOnly.startsWith('66')) {
-        return '0' + digitsOnly.slice(2);
-      }
-      
-      return digitsOnly;
-    } catch (error) {
-      return input;
-    }
-  };
-
-  const validatePromptPay = (number: string): boolean => {
-    // Must be exactly 10 digits
-    if (number.length !== 10) return false;
-
-    // Must start with '0'
-    if (!number.startsWith('0')) return false;
-
-    // Second digit must be 6, 8, 9 for mobile numbers
-    const secondDigit = parseInt(number[1]);
-    if (![6, 8, 9].includes(secondDigit)) return false;
-
-    // Must contain only digits
-    if (!/^\d+$/.test(number)) return false;
-
-    return true;
-  };
-
-  const handlePromptPayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedNumber = formatPhoneNumber(e.target.value);
-    setPromptPayNumber(formattedNumber);
-    setIsValidPromptPay(validatePromptPay(formattedNumber));
   };
 
   return (
@@ -386,360 +155,43 @@ export const BadmintonCostCalculator = ({
 
           <Divider />
 
-          <div>
-            <Typography.Title level={5}>Court Fee</Typography.Title>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1">
-                <Typography.Text className="mb-1 block text-sm">Court Rate per Hour</Typography.Text>
-                <InputNumber
-                  placeholder="Enter court rate per hour"
-                  value={courtFee.hourlyRate || null}
-                  onChange={value => setCourtFee({ ...courtFee, hourlyRate: value || 0 })}
-                  className="w-full [&_input]:!outline-none [&_input]:!ring-0"
-                  prefix="฿"
-                  min={0}
-                  pattern="[0-9]*"
-                  type="number"
-                  controls={false}
-                />
-              </div>
-              <div className="flex-1">
-                <Typography.Text className="mb-1 block text-sm">Number of Hours</Typography.Text>
-                <InputNumber
-                  placeholder="Enter number of hours"
-                  value={courtFee.hours || null}
-                  onChange={value => setCourtFee({ ...courtFee, hours: value || 0 })}
-                  className="w-full [&_input]:!outline-none [&_input]:!ring-0"
-                  min={0}
-                  step={0.5}
-                  pattern="[0-9]*"
-                  type="number"
-                  controls={false}
-                />
-              </div>
-            </div>
-            <div className="mt-2 text-right">
-              <Typography.Text type="secondary">
-                Total Court Fee: ฿{totalCourtFee.toFixed(2)}
-              </Typography.Text>
-            </div>
-          </div>
+          <CourtFeeSection 
+            courtFee={courtFee}
+            onCourtFeeChange={setCourtFee}
+          />
 
           <Divider />
 
-          <div>
-            <Typography.Title level={5}>Shuttlecock</Typography.Title>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1">
-                <Typography.Text className="mb-1 block text-sm">Shuttlecock Price</Typography.Text>
-                <InputNumber
-                  placeholder="Enter price per shuttlecock"
-                  value={shuttlecock.pricePerPiece || null}
-                  onChange={value => setShuttlecock({ ...shuttlecock, pricePerPiece: value || 0 })}
-                  className="w-full [&_input]:!outline-none [&_input]:!ring-0"
-                  prefix="฿"
-                  min={0}
-                  pattern="[0-9]*"
-                  type="number"
-                  controls={false}
-                />
-              </div>
-              <div className="flex-1">
-                <Typography.Text className="mb-1 block text-sm">Number of Shuttlecocks</Typography.Text>
-                <InputNumber
-                  placeholder="Enter number of shuttlecocks used"
-                  value={shuttlecock.quantity || null}
-                  onChange={value => setShuttlecock({ ...shuttlecock, quantity: value || 0 })}
-                  className="w-full [&_input]:!outline-none [&_input]:!ring-0"
-                  min={0}
-                  pattern="[0-9]*"
-                  type="number"
-                  controls={false}
-                />
-              </div>
-            </div>
-            <div className="mt-2 text-right">
-              <Typography.Text type="secondary">
-                Total Shuttlecock Cost: ฿{totalShuttlecockCost.toFixed(2)}
-              </Typography.Text>
-            </div>
-          </div>
+          <ShuttlecockSection 
+            shuttlecock={shuttlecock}
+            onShuttlecockChange={setShuttlecock}
+          />
 
           <Divider />
 
-          <div>
-            <Typography.Title level={5}>Additional Expenses</Typography.Title>
-            {customExpenses.map(expense => (
-              <div key={expense.id} className="flex flex-col gap-2 mb-4">
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Enter expense name"
-                    value={expense.name}
-                    onChange={e => handleCustomExpenseChange(expense.id, 'name', e.target.value)}
-                    className="flex-1 [&_input]:!outline-none [&_input]:!ring-0"
-                    onFocus={(e) => {
-                      e.target.select();
-                      handleCustomExpenseChange(expense.id, 'name', '');
-                    }}
-                    onBlur={(e) => {
-                      if (!e.target.value) {
-                        handleCustomExpenseChange(expense.id, 'name', 'Expense');
-                      }
-                    }}
-                  />
-                  <InputNumber
-                    placeholder="Enter amount"
-                    value={expense.amount || null}
-                    onChange={value => handleCustomExpenseChange(expense.id, 'amount', value || 0)}
-                    className="w-32 [&_input]:!outline-none [&_input]:!ring-0"
-                    prefix="฿"
-                    min={0}
-                    pattern="[0-9]*"
-                    type="number"
-                    controls={false}
-                  />
-                  <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleDeleteCustomExpense(expense.id)}
-                  />
-                </div>
-                <Select
-                  mode="multiple"
-                  placeholder="Assign to players (optional)"
-                  value={expense.assignedTo}
-                  onChange={value => handleCustomExpenseChange(expense.id, 'assignedTo', value)}
-                  className="w-full"
-                  allowClear
-                >
-                  {players.map(player => (
-                    <Select.Option key={player.name} value={player.name}>
-                      {player.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-                {expense.assignedTo.length > 0 && (
-                  <Typography.Text type="secondary" className="text-sm">
-                    Each selected player will pay ฿{expense.amount.toFixed(2)}
-                  </Typography.Text>
-                )}
-              </div>
-            ))}
-            <Button
-              type="dashed"
-              onClick={handleAddCustomExpense}
-              icon={<PlusOutlined />}
-              className="w-full mt-2"
-            >
-              Add Expense
-            </Button>
-            {customExpenses.length > 0 && (
-              <div className="mt-2 text-right">
-                <Typography.Text type="secondary">
-                  Total Additional Expenses: ฿{totalCustomExpenses.toFixed(2)}
-                </Typography.Text>
-              </div>
-            )}
-          </div>
+          <AdditionalExpenses
+            customExpenses={customExpenses}
+            players={players}
+            onCustomExpensesChange={setCustomExpenses}
+          />
 
           <Divider />
 
-          <div>
-            <Typography.Title level={5}>Cost Breakdown</Typography.Title>
-            <Space direction="vertical" className="w-full">
-              <div className="flex justify-between">
-                <Typography.Text>Shared Costs:</Typography.Text>
-                <Typography.Text>฿{sharedCost.toFixed(2)}</Typography.Text>
-              </div>
-              <div className="flex justify-between">
-                <Typography.Text>Shared Cost per Player:</Typography.Text>
-                <Typography.Text>฿{sharedCostPerPlayer.toFixed(2)}</Typography.Text>
-              </div>
-              {customExpenses.length > 0 && (
-                <div className="flex justify-between">
-                  <Typography.Text>Additional Expenses:</Typography.Text>
-                  <Typography.Text>฿{totalCustomExpenses.toFixed(2)}</Typography.Text>
-                </div>
-              )}
-              <Divider className="my-2" />
-              <div className="flex justify-between">
-                <Typography.Text strong>Total Cost:</Typography.Text>
-                <Typography.Text strong>฿{totalCost.toFixed(2)}</Typography.Text>
-              </div>
-            </Space>
-          </div>
+          <CostBreakdown
+            players={players}
+            sharedCost={sharedCost}
+            customExpenses={customExpenses}
+            totalCost={totalCost}
+          />
 
           <Divider />
 
-          <div>
-            <Typography.Title level={5}>Individual Costs</Typography.Title>
-            <Space direction="vertical" className="w-full">
-              {playerCosts.map(cost => (
-                <div key={cost.name} className="flex justify-between items-center">
-                  <div>
-                    <Typography.Text strong>{cost.name}</Typography.Text>
-                    {cost.customExpenses > 0 && (
-                      <Typography.Text type="secondary" className="ml-2">
-                        (+฿{cost.customExpenses.toFixed(2)})
-                      </Typography.Text>
-                    )}
-                  </div>
-                  <Typography.Text strong type="success">
-                    ฿{cost.total.toFixed(2)}
-                  </Typography.Text>
-                </div>
-              ))}
-            </Space>
-          </div>
-
-          <Divider />
-
-          <div>
-            <Typography.Title level={5}>PromptPay QR Code</Typography.Title>
-            <Space.Compact className="w-full">
-              <Input
-                placeholder="Enter your PromptPay number"
-                value={promptPayNumber}
-                onChange={handlePromptPayChange}
-                status={promptPayNumber && !isValidPromptPay ? 'error' : undefined}
-                maxLength={10}
-                pattern="[0-9]*"
-                type="tel"
-              />
-              <Button
-                type="primary"
-                icon={<QrcodeOutlined />}
-                onClick={handleGenerateQRCode}
-                disabled={!isValidPromptPay}
-              >
-                Generate QR Code
-              </Button>
-            </Space.Compact>
-            {promptPayNumber && !isValidPromptPay && (
-              <Typography.Text type="danger" className="mt-1 block text-sm">
-                Please enter a valid Thai phone number
-              </Typography.Text>
-            )}
-          </div>
+          <PromptPaySection
+            playerCosts={playerCosts}
+            totalCost={totalCost}
+          />
         </div>
       </div>
-
-      {/* Phone Number Verification Modal */}
-      <Modal
-        title="Verify PromptPay Number"
-        open={verifyNumberVisible}
-        closable={false}
-        maskClosable={false}
-        centered
-        className="verification-modal"
-        footer={
-          <div className="flex justify-between">
-            <Button danger onClick={() => setVerifyNumberVisible(false)}>
-              Cancel
-            </Button>
-            <Button type="primary" onClick={handleVerifyAndGenerate}>
-              Confirm & Generate QR
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <ExclamationCircleOutlined className="text-warning text-xl" />
-            <Typography.Text strong>Please verify your PromptPay number:</Typography.Text>
-          </div>
-          <div className="p-6 bg-gray-50 rounded-lg text-center">
-            <Typography.Title level={3} className="!mb-2">
-              {promptPayNumber.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              Make sure this is the correct number to receive payment
-            </Typography.Text>
-          </div>
-        </div>
-      </Modal>
-
-      {/* QR Code Modal */}
-      <Modal
-        title="PromptPay QR Code"
-        open={qrCodeVisible}
-        closable={false}
-        maskClosable={false}
-        centered
-        className="qr-code-modal"
-        footer={
-          <div className="flex justify-between">
-            <Button danger onClick={() => setQrCodeVisible(false)}>
-              Close
-            </Button>
-            <Button 
-              type="primary" 
-              onClick={handleDownloadQR} 
-              icon={isDownloading ? <Spin className="mr-2" /> : <DownloadOutlined />}
-              disabled={isDownloading}
-            >
-              {isDownloading ? 'Downloading...' : 'Download QR Code'}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-6">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="mb-2">
-              <Typography.Text type="secondary" className="text-sm">PromptPay Number:</Typography.Text>
-              <Typography.Text strong className="ml-2">
-                {promptPayNumber.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}
-              </Typography.Text>
-            </div>
-          </div>
-
-          {promptPayNumber && isValidPromptPay && (
-            <div className="flex justify-center">
-              <div className="p-6 bg-white rounded-lg shadow-lg">
-                <QRCodeSVG
-                  id="qr-code-svg"
-                  value={generateQRPayload()}
-                  size={256}
-                  level="L"
-                  includeMargin={true}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="p-6 bg-gray-50 rounded-lg">
-            <Typography.Title level={5} className="!mb-3">Payment Details</Typography.Title>
-            <div className="space-y-4">
-              {playerCosts.map(cost => (
-                <div key={cost.name} className="flex flex-col">
-                  <div className="flex justify-between items-center">
-                    <Typography.Text strong>{cost.name}</Typography.Text>
-                    <Typography.Text type="success" strong>฿{cost.total.toFixed(2)}</Typography.Text>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    <div className="flex justify-between">
-                      <span>Shared Cost:</span>
-                      <span>฿{cost.sharedCost.toFixed(2)}</span>
-                    </div>
-                    {cost.customExpenses > 0 && (
-                      <div className="flex justify-between">
-                        <span>Additional Expenses:</span>
-                        <span>฿{cost.customExpenses.toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <Divider className="!my-4" />
-              <div className="flex justify-between items-center">
-                <Typography.Text strong>Total Cost:</Typography.Text>
-                <Typography.Text type="success" strong>฿{totalCost.toFixed(2)}</Typography.Text>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }; 

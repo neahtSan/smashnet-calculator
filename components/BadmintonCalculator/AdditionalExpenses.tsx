@@ -1,4 +1,4 @@
-import { Typography, Input, InputNumber, Button, Select } from 'antd';
+import { Typography, Input, InputNumber, Button, Select, Radio } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { CustomExpense, PlayerStats } from '@/interface';
 
@@ -17,8 +17,8 @@ export const AdditionalExpenses = ({
 
   const handleCustomExpenseChange = (
     id: string,
-    field: 'name' | 'amount' | 'assignedTo',
-    value: string | number | string[]
+    field: 'name' | 'amount' | 'assignedTo' | 'isShared',
+    value: string | number | string[] | boolean
   ) => {
     onCustomExpensesChange(customExpenses.map(expense =>
       expense.id === id ? { ...expense, [field]: value } : expense
@@ -30,7 +30,8 @@ export const AdditionalExpenses = ({
       id: Date.now().toString(),
       name: 'Expense',
       amount: 0,
-      assignedTo: []
+      assignedTo: [],
+      isShared: true // Default to shared mode
     };
     onCustomExpensesChange([...customExpenses, newExpense]);
   };
@@ -78,25 +79,47 @@ export const AdditionalExpenses = ({
               onClick={() => handleDeleteCustomExpense(expense.id)}
             />
           </div>
-          <Select
-            mode="multiple"
-            placeholder="Assign to players (optional)"
-            value={expense.assignedTo}
-            onChange={value => handleCustomExpenseChange(expense.id, 'assignedTo', value)}
-            className="w-full"
-            allowClear
-          >
-            {players.map(player => (
-              <Select.Option key={player.name} value={player.name}>
-                {player.name}
-              </Select.Option>
-            ))}
-          </Select>
-          {expense.assignedTo.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <Select
+              mode="multiple"
+              placeholder="Assign to players (optional)"
+              value={expense.assignedTo}
+              onChange={value => handleCustomExpenseChange(expense.id, 'assignedTo', value)}
+              className="w-full"
+              allowClear
+            >
+              {players.map(player => (
+                <Select.Option key={player.name} value={player.name}>
+                  {player.name}
+                </Select.Option>
+              ))}
+            </Select>
+            {expense.assignedTo.length === 0 && players.length > 0 && (
+              <Radio.Group
+                value={expense.isShared ?? true}
+                onChange={e => handleCustomExpenseChange(expense.id, 'isShared', e.target.value)}
+                className="grid grid-cols-2 gap-0"
+                buttonStyle="solid"
+                defaultValue={true}
+              >
+                <Radio.Button value={true} className="text-center">Share Equally</Radio.Button>
+                <Radio.Button value={false} className="text-center">Each Player Pays Full</Radio.Button>
+              </Radio.Group>
+            )}
+          </div>
+          {expense.assignedTo.length > 0 ? (
             <Typography.Text type="secondary" className="text-sm">
               Each selected player will pay ฿{expense.amount.toFixed(2)}
             </Typography.Text>
-          )}
+          ) : players.length > 0 ? (
+            <Typography.Text type="secondary" className="text-sm">
+              {expense.isShared ? (
+                `This expense will be shared equally: ฿${(expense.amount / players.length).toFixed(2)} per player`
+              ) : (
+                `Each player will pay the full amount: ฿${expense.amount.toFixed(2)}`
+              )}
+            </Typography.Text>
+          ) : null}
         </div>
       ))}
       <Button
