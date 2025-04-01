@@ -1,4 +1,4 @@
-import { Player, Match } from '@/types';
+import { Player, Match } from '@/types/interface';
 
 export const calculateWinRate = (player: Player): number => {
   return player.matches === 0 ? 0 : player.wins / player.matches;

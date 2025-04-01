@@ -4,7 +4,13 @@ export interface Player {
   wins: number;
   losses: number;
   matches: number;
-  lastTeam?: string; // To track last team played with
+}
+
+export interface PlayerStats {
+  name: string;
+  wins: number;
+  losses: number;
+  winRate: number;
 }
 
 export interface Match {

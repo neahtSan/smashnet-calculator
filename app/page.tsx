@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Input, Button, List, Card, Modal, Form, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Player, Match } from '@/types';
+import { Input, Button, List, Card, Modal, Form, message, Avatar, Space, Typography } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Player, Match, PlayerStats } from '@/types/interface';
 import { findBestMatch, updatePlayerStats, findFirstMatch, findSecondMatch } from '@/utils/matchmaker';
 
 export default function Home() {
@@ -15,6 +15,9 @@ export default function Home() {
   const [isCreatingMatch, setIsCreatingMatch] = useState(false);
   const [isMatchButtonDisabled, setIsMatchButtonDisabled] = useState(true);
   const [previousPlayerCount, setPreviousPlayerCount] = useState(0);
+  const [isFinishModalVisible, setIsFinishModalVisible] = useState(false);
+  const [isResultsVisible, setIsResultsVisible] = useState(false);
+  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
 
   useEffect(() => {
     // Enable button and reset matches when player count changes
@@ -178,6 +181,52 @@ const handleCreateMatch = () => {
     }, 1000);
   };
 
+  const handleFinishPlaying = () => {
+    setIsFinishModalVisible(true);
+  };
+
+  const handleConfirmFinish = () => {
+    // Calculate player statistics
+    const stats = players.map(player => {
+      const totalGames = player.wins + player.losses;
+      const winRate = totalGames > 0 ? (player.wins / totalGames) * 100 : 0;
+
+      return {
+        name: player.name,
+        wins: player.wins,
+        losses: player.losses,
+        winRate
+      };
+    });
+
+    // Sort by win rate (descending) and then by wins (descending) for tie-breaking
+    const sortedStats = stats.sort((a, b) => {
+      if (b.winRate !== a.winRate) {
+        return b.winRate - a.winRate;
+      }
+      return b.wins - a.wins;
+    });
+
+    setPlayerStats(sortedStats);
+    setIsFinishModalVisible(false);
+    setIsResultsVisible(true);
+
+    // Save to localStorage
+    localStorage.setItem('smashnet_matches', JSON.stringify(matches));
+    localStorage.setItem('smashnet_players', JSON.stringify(players));
+    localStorage.setItem('smashnet_stats', JSON.stringify(sortedStats));
+  };
+
+  const handleRestartTournament = () => {
+    setMatches([]);
+    setPlayers([]);
+    setPlayerStats([]);
+    setIsResultsVisible(false);
+    localStorage.removeItem('smashnet_matches');
+    localStorage.removeItem('smashnet_players');
+    localStorage.removeItem('smashnet_stats');
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center py-8">
       <div className="w-full max-w-md px-4">
@@ -324,6 +373,17 @@ const handleCreateMatch = () => {
             );
           })()}
         </div>
+
+        {matches.length > 0 && (
+          <Button
+            type="primary"
+            onClick={handleFinishPlaying}
+            className="w-full mt-4"
+            style={{ backgroundColor: '#52c41a' }}
+          >
+            Finish Tournament
+          </Button>
+        )}
       </div>
 
       <Modal
@@ -379,6 +439,92 @@ const handleCreateMatch = () => {
             <Input maxLength={32} />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Finish Playing Confirmation Modal */}
+      <Modal
+        title="Finish Playing"
+        open={isFinishModalVisible}
+        onOk={handleConfirmFinish}
+        onCancel={() => setIsFinishModalVisible(false)}
+      >
+        <p>Are you sure you want to finish playing? This will save the current match data and show the tournament results.</p>
+      </Modal>
+
+      {/* Tournament Results Modal */}
+      <Modal
+        title="Tournament Results"
+        open={isResultsVisible}
+        onCancel={() => setIsResultsVisible(false)}
+        footer={[
+          <Button 
+            key="restart" 
+            type="primary" 
+            danger 
+            icon={<ReloadOutlined />}
+            onClick={handleRestartTournament}
+          >
+            Restart Tournament
+          </Button>
+        ]}
+        width={800}
+      >
+        <List
+          dataSource={playerStats}
+          renderItem={(player, index) => (
+            <List.Item>
+              <List.Item.Meta
+                avatar={
+                  <div className="relative">
+                    {index === 0 && (
+                      <div 
+                        className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10"
+                        style={{ color: '#eb2f96' }}
+                      >
+                        👑
+                      </div>
+                    )}
+                    <Avatar 
+                      size="large" 
+                      icon={<UserOutlined />}
+                      style={{ backgroundColor: index === 0 ? '#eb2f96' : '#1890ff' }}
+                    />
+                  </div>
+                }
+                title={
+                  <Space>
+                    <span className="text-lg font-semibold">
+                      {index + 1}. {player.name}
+                    </span>
+                    {index === 0 && <TrophyOutlined style={{ color: '#eb2f96' }} />}
+                  </Space>
+                }
+                description={
+                  <Space size="large">
+                    <Typography.Text 
+                      type="secondary"
+                      style={{ color: player.winRate >= 50 ? '#3f8600' : '#cf1322' }}
+                    >
+                      Win Rate: {player.winRate.toFixed(1)}%
+                    </Typography.Text>
+                    <Typography.Text 
+                      type="secondary"
+                      style={{ color: '#3f8600' }}
+                    >
+                      Wins: {player.wins}
+                    </Typography.Text>
+                    <Typography.Text 
+                      type="secondary"
+                      style={{ color: '#cf1322' }}
+                    >
+                      Losses: {player.losses}
+                    </Typography.Text>
+                  </Space>
+                }
+              />
+            </List.Item>
+          )}
+        />
       </Modal>
     </main>
   );
