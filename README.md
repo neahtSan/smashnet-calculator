@@ -17,11 +17,12 @@ A modern web application for managing badminton tournaments with intelligent gro
 
 The application is in beta, with the following implementation status:
 - ✅ Single court logic (supporting up to 7 players)
-- 🚧 Multi-court logic (structure ready for up to 12 players)
-- 🚧 Badminton Cost Calculator
+- ✅ Badminton Cost Calculator
 - ✅ Group distribution system
 - ✅ Match result tracking
 - ✅ Tournament statistics
+- ✅ Interface organization
+- 🚧 Multi-court logic (structure ready for up to 12 players)
 
 ## ✨ Features
 
@@ -50,6 +51,24 @@ The application is in beta, with the following implementation status:
   - Match history tracking
   - Player performance updates
 
+### 💰 Cost Calculator
+- **Court Fee Management**
+  - Hourly rate calculation
+  - Flexible duration tracking
+  - Total cost computation
+- **Shuttlecock Expenses**
+  - Per-piece pricing
+  - Quantity tracking
+  - Total cost summary
+- **Additional Expenses**
+  - Custom expense categories
+  - Individual or shared cost allocation
+  - Dynamic cost distribution
+- **PromptPay Integration**
+  - QR code generation
+  - Individual payment amounts
+  - Easy payment sharing
+
 ### 🏆 Tournament Features
 - Live win/loss statistics
 - Player rankings with tie handling
@@ -68,59 +87,55 @@ The application is in beta, with the following implementation status:
   - Ant Design Components
   - Responsive Design
 
-### Key Components
-```
-components/
-├── PlayerForm/          # Player management modal
-├── CurrentMatch/        # Active match display
-├── PlayerList/          # Player statistics view
-├── TournamentResults/   # Final rankings modal
-└── Confirmations/      # Action verification modals
-```
-
 ### Project Structure
 ```
 smashnet-calculator/
 ├── app/                    # Next.js app directory
 │   ├── layout.tsx         # Root layout with global styles
 │   ├── page.tsx           # Main application page
-│   └── globals.css        # Global styles and Tailwind imports
+│   └── calculator/        # Cost calculator page
 │
 ├── components/            # React components
-│   ├── PlayerForm/       # Player management modal
-│   │   └── index.tsx     # Form for adding/editing players
-│   │
-│   ├── CurrentMatch/     # Active match display
-│   │   └── index.tsx     # Current match status and controls
-│   │
-│   ├── PlayerList/       # Player statistics view
-│   │   └── index.tsx     # List of players with their stats
-│   │
-│   ├── TournamentResults/# Tournament results modal
-│   │   └── index.tsx     # Final rankings and statistics
-│   │
-│   └── Confirmations/    # Action verification modals
-│       ├── DeleteConfirmation.tsx    # Player deletion confirmation
-│       ├── FinishConfirmation.tsx    # Tournament finish confirmation
-│       └── RevertMatchConfirmation.tsx # Match reversion confirmation
+│   ├── BadmintonCalculator/  # Cost calculator components
+│   │   ├── AdditionalExpenses.tsx
+│   │   ├── CostBreakdown.tsx
+│   │   ├── CourtFeeSection.tsx
+│   │   ├── PlayerListWithHours.tsx
+│   │   ├── PromptPaySection.tsx
+│   │   ├── QRCodeModal.tsx
+│   │   ├── ShuttlecockSection.tsx
+│   │   └── VerificationModal.tsx
+│   ├── BadmintonCostCalculator.tsx
+│   ├── CurrentMatch.tsx
+│   ├── DeleteConfirmation.tsx
+│   ├── FinishConfirmation.tsx
+│   ├── PlayerForm.tsx
+│   ├── PlayerList.tsx
+│   ├── RevertMatchConfirmation.tsx
+│   └── TournamentResults.tsx
 │
-├── types/                # TypeScript type definitions
-│   └── interface.ts     # Shared interfaces and types
+├── interface/            # TypeScript interfaces
+│   ├── calculator.ts    # Cost calculation interfaces
+│   ├── match.ts        # Match management interfaces
+│   ├── modal.ts        # Modal component interfaces
+│   ├── player.ts       # Player management interfaces
+│   ├── qrcode.ts       # QR code related interfaces
+│   └── index.ts        # Interface exports
 │
 ├── utils/               # Utility functions
-│   ├── matchmaker.ts    # Match creation and team balancing logic
-│   ├── groupPlayer.ts   # Player group distribution logic
-│   └── storage.ts       # Local storage management
+│   ├── calculatorLogic.ts  # Cost calculation logic
+│   ├── groupPlayer.ts      # Group distribution logic
+│   └── matchmaker.ts       # Match creation logic
 │
 ├── public/             # Static assets
-│   └── images/        # Image assets
-│
-├── styles/            # Component-specific styles
-│   └── components/   # Styled components
-│
-├── package.json      # Project dependencies and scripts
+├── .next/             # Next.js build output
+├── node_modules/      # Dependencies
+├── next.config.js     # Next.js configuration
+├── package.json       # Project dependencies
+├── postcss.config.js  # PostCSS configuration
 ├── tailwind.config.js # Tailwind CSS configuration
-└── tsconfig.json     # TypeScript configuration
+├── tsconfig.json      # TypeScript configuration
+└── README.md          # Project documentation
 ```
 
 ## 🚀 Getting Started
@@ -159,24 +174,6 @@ smashnet-calculator/
   - Match visualization
   - Tournament brackets
   - Player profiles
-
-- **Badminton Cost Calculator**
-  - **Expense Management**
-    - Court fee calculation (per hour, total hours)
-    - Shuttlecock cost tracking (price per piece, total used)
-    - Custom expense categories (drinks, snacks, equipment)
-  - **Cost Calculation & Splitting**
-    - Automatic per-player cost calculation
-    - Detailed cost breakdown
-    - Dynamic updates as expenses change
-  - **PromptPay Integration**
-    - QR code generation for each player's share
-    - Customizable PromptPay phone number
-    - QR code download as PNG
-  - **Sharing Options**
-    - Shareable payment links
-    - Email integration
-    - Social media sharing (LINE, Messenger, WhatsApp)
 
 ## 🤝 Contributing
 
@@ -219,8 +216,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-  <img src="https://avatars.githubusercontent.com/neahtSan" alt="neahtSan" width="100" height="100" style="border-radius: 50%; margin-bottom: 10px;">
-  <p>Made with ❤️ by <a href="https://github.com/neahtSan">neahtSan</a></p>
-  <p>Full-stack Developer | Badminton Enthusiast</p>
+  <img src="https://github.com/neahtSan.png" width="80" style="border-radius: 50%;" alt="neahtSan Logo"/>
+  <br>
+  <strong>Made with ❤️ by <a href="https://github.com/neahtSan">neahtSan</a></strong>
 </div>
 

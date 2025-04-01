@@ -1,66 +1,65 @@
-import { Modal, Form, Input } from 'antd';
-import { Player } from '@/types/interface';
+import { Modal, Form, Input, Button, message } from 'antd';
+import { Player, PlayerFormComponentProps } from '@/interface';
 import { MAX_PLAYERS } from '@/utils/groupPlayer';
 
-interface PlayerFormProps {
-  isVisible: boolean;
-  onClose: () => void;
-  onSubmit: (name: string) => void;
-  editingPlayer?: Player;
-  players: Player[];
-}
-
-export const PlayerForm = ({ isVisible, onClose, onSubmit, editingPlayer, players }: PlayerFormProps) => {
+export const PlayerForm = ({
+  isVisible,
+  onClose,
+  onSubmit,
+  editingPlayer,
+  players
+}: PlayerFormComponentProps) => {
   const [form] = Form.useForm();
 
-  const handleSubmit = () => {
-    form.validateFields().then(values => {
-      onSubmit(values.name);
-      form.resetFields();
-    });
-  };
-
-  const handleCancel = () => {
-    form.resetFields();
-    onClose();
+  const handleSubmit = (values: { name: string }) => {
+    onSubmit(values.name);
+    form.resetFields(); // Reset form after submission
   };
 
   return (
     <Modal
-      title={editingPlayer ? 'Edit Player' : 'Add Player'}
+      title={editingPlayer ? "Edit Player" : "Add Player"}
       open={isVisible}
-      onOk={handleSubmit}
-      onCancel={handleCancel}
-      okButtonProps={{
-        disabled: !editingPlayer && players.length >= MAX_PLAYERS
-      }}
+      onCancel={onClose}
+      footer={null}
+      maskClosable={false}
     >
       <Form
         form={form}
-        layout="vertical"
-        initialValues={{ name: editingPlayer?.name || '' }}
+        onFinish={handleSubmit}
+        initialValues={{ name: editingPlayer?.name }}
       >
         <Form.Item
           name="name"
-          label="Player Name"
           rules={[
-            { required: true, message: 'Please enter a name' },
-            { max: 32, message: 'Name cannot exceed 32 characters' },
+            { required: true, message: 'Please enter player name' },
+            { max: 16, message: 'Name cannot exceed 16 characters' },
             {
               validator: (_, value) => {
-                if (!value || editingPlayer?.name === value) return Promise.resolve();
-                const nameExists = players.some(p => p.name === value);
-                return nameExists
-                  ? Promise.reject('This name is already taken')
-                  : Promise.resolve();
+                if (!value) return Promise.resolve();
+                const isDuplicate = players.some(
+                  p => p.name.toLowerCase() === value.toLowerCase() && p.id !== editingPlayer?.id
+                );
+                if (isDuplicate) {
+                  return Promise.reject('A player with this name already exists');
+                }
+                return Promise.resolve();
               }
             }
           ]}
         >
-          <Input 
-            maxLength={32} 
-            style={{ fontSize: '16px' }}
+          <Input
+            placeholder="Enter player name"
+            maxLength={16}
+            showCount
+            status={form.getFieldError('name').length > 0 ? 'error' : undefined}
+            autoComplete="off"
           />
+        </Form.Item>
+        <Form.Item>
+          <Button type="primary" htmlType="submit" block>
+            {editingPlayer ? "Update" : "Add"}
+          </Button>
         </Form.Item>
       </Form>
     </Modal>

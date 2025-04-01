@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Input, Button, List, Card, Modal, Form, message, Avatar, Space, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined, UndoOutlined, CheckCircleFilled } from '@ant-design/icons';
-import { Player, Match, PlayerStats } from '@/types/interface';
+import { Player, PlayerStats } from '../interface/player';
+import { Match } from '@/interface';
 import { findBestMatch, updatePlayerStats, findFirstMatch, findSecondMatch } from '@/utils/matchmaker';
 import { MIN_PLAYERS, MAX_PLAYERS } from '@/utils/groupPlayer';
 import { PlayerList } from '@/components/PlayerList';
@@ -364,18 +365,20 @@ export default function Home() {
         <div className="bg-white rounded-lg shadow-md p-4 mb-4">
           <h1 className="text-xl font-bold text-center text-gray-800 mb-4">Smashnet Matchmaker</h1>
           
-          {players.length < MIN_PLAYERS && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-              <p className="text-sm text-blue-700 text-center">
-                Please add at least {MIN_PLAYERS} players to start a match.
-                {players.length >= MAX_PLAYERS ? (
-                  <span className="block mt-1">Maximum number of players ({MAX_PLAYERS}) reached.</span>
-                ) : (
-                  <span className="block mt-1">You can add up to {MAX_PLAYERS} players.</span>
-                )}
-              </p>
-            </div>
-          )}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+            <p className="text-sm text-blue-700 text-center">
+              {players.length < MIN_PLAYERS ? (
+                <>Please add at least {MIN_PLAYERS} players to start a match.</>
+              ) : (
+                <>You have enough players to start a match!</>
+              )}
+              {players.length >= MAX_PLAYERS ? (
+                <span className="block mt-1">Maximum of {MAX_PLAYERS} players reached.</span>
+              ) : (
+                <span className="block mt-1">You can add up to {MAX_PLAYERS} players.</span>
+              )}
+            </p>
+          </div>
           
           <Button 
             type="primary" 
@@ -479,8 +482,7 @@ export default function Home() {
         isVisible={isResultsVisible}
         onClose={() => {}}
         onRestart={handleRestartTournament}
-        playerStats={playerStats}
-        closable={false}
+        players={playerStats}
       />
     </main>
   );
