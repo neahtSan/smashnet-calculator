@@ -5,6 +5,13 @@ import { Input, Button, List, Card, Modal, Form, message, Avatar, Space, Typogra
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined, UndoOutlined, CheckCircleFilled } from '@ant-design/icons';
 import { Player, Match, PlayerStats } from '@/types/interface';
 import { findBestMatch, updatePlayerStats, findFirstMatch, findSecondMatch } from '@/utils/matchmaker';
+import { PlayerList } from '@/components/PlayerList';
+import { CurrentMatch } from '@/components/CurrentMatch';
+import { TournamentResults } from '@/components/TournamentResults';
+import { PlayerForm } from '@/components/PlayerForm';
+import { DeleteConfirmation } from '@/components/DeleteConfirmation';
+import { RevertMatchConfirmation } from '@/components/RevertMatchConfirmation';
+import { FinishConfirmation } from '@/components/FinishConfirmation';
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -23,6 +30,20 @@ export default function Home() {
   const [selectedWinner, setSelectedWinner] = useState<'team1' | 'team2' | null>(null);
   const [playerToDelete, setPlayerToDelete] = useState<string | null>(null);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [isFinishConfirmVisible, setIsFinishConfirmVisible] = useState(false);
+
+  useEffect(() => {
+    const savedData = localStorage.getItem('tournamentData');
+    if (savedData) {
+      const { players: savedPlayers, matches: savedMatches } = JSON.parse(savedData);
+      setPlayers(savedPlayers);
+      setMatches(savedMatches);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('tournamentData', JSON.stringify({ players, matches }));
+  }, [players, matches]);
 
   useEffect(() => {
     // Enable button and reset matches when player count changes
@@ -195,23 +216,12 @@ export default function Home() {
   };
 
   const handleFinishPlaying = () => {
-    setIsFinishModalVisible(true);
-  };
-
-  const handleConfirmFinish = () => {
     // Calculate player statistics
-    const stats = players.map(player => {
-      const totalGames = player.wins + player.losses;
-      const winRate = totalGames > 0 ? (player.wins / totalGames) * 100 : 0;
-
-      return {
-        name: player.name,
-        wins: player.wins,
-        losses: player.losses,
-        winRate,
-        totalMatches: player.matches
-      };
-    });
+    const stats = players.map(player => ({
+      ...player,
+      winRate: (player.wins / (player.matches || 1)) * 100,
+      totalMatches: player.matches
+    }));
 
     // Sort by win rate (descending), then total matches (descending), then name (ascending)
     const sortedStats = stats.sort((a, b) => {
@@ -220,16 +230,14 @@ export default function Home() {
         return b.winRate - a.winRate;
       }
       // Same win rate - sort by total matches
-      if (b.totalMatches !== a.totalMatches) {
-        return b.totalMatches - a.totalMatches;
+      if (b.wins !== a.wins) {
+        return b.wins - a.wins;
       }
-      // Same win rate and total matches - sort by name
-      return a.name.localeCompare(b.name);
+      return a.losses - b.losses;
     });
 
     // Calculate ranks (only rank 1 can be shared)
     const highestWinRate = sortedStats[0].winRate;
-    let currentRank = 1;
     const statsWithRanks = sortedStats.map((player, index) => {
       if (index === 0 || (player.winRate === highestWinRate)) {
         // First place or tied for first
@@ -243,13 +251,14 @@ export default function Home() {
     });
 
     setPlayerStats(statsWithRanks);
-    setIsFinishModalVisible(false);
     setIsResultsVisible(true);
 
     // Save to localStorage
-    localStorage.setItem('smashnet_matches', JSON.stringify(matches));
-    localStorage.setItem('smashnet_players', JSON.stringify(players));
-    localStorage.setItem('smashnet_stats', JSON.stringify(statsWithRanks));
+    localStorage.setItem('tournamentData', JSON.stringify({ 
+      players, 
+      matches,
+      stats: statsWithRanks 
+    }));
   };
 
   const handleRestartTournament = () => {
@@ -257,9 +266,7 @@ export default function Home() {
     setPlayers([]);
     setPlayerStats([]);
     setIsResultsVisible(false);
-    localStorage.removeItem('smashnet_matches');
-    localStorage.removeItem('smashnet_players');
-    localStorage.removeItem('smashnet_stats');
+    localStorage.removeItem('tournamentData');
   };
 
   const handleRevertMatch = (matchId: string) => {
@@ -334,6 +341,15 @@ export default function Home() {
     setSelectedWinner(null);
   };
 
+  const handleFinishClick = () => {
+    setIsFinishConfirmVisible(true);
+  };
+
+  const handleConfirmFinish = () => {
+    setIsFinishConfirmVisible(false);
+    handleFinishPlaying();
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 overflow-x-hidden">
       <div className="w-full max-w-md mx-auto px-4 py-6">
@@ -363,64 +379,10 @@ export default function Home() {
             Add Player {players.length >= 7 ? "(Max 7)" : ""}
           </Button>
 
-          <List
-            className="mb-4"
-            dataSource={players}
-            renderItem={player => (
-              <List.Item
-                className="bg-white rounded-lg mb-2 shadow-sm hover:shadow-md transition-shadow duration-200 p-3"
-              >
-                <div className="w-full">
-                  <div className="flex items-center mb-3 relative">
-                    <div className="absolute left-1/2 -translate-x-1/2">
-                      <div className="font-semibold text-base text-gray-800">
-                        {player.name}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 w-[72px] ml-auto">
-                      <Button 
-                        key="edit" 
-                        icon={<EditOutlined style={{ fontSize: '16px' }} />} 
-                        onClick={() => handleEditPlayer(player)}
-                        className="flex items-center justify-center !w-8 !h-8 !min-w-0"
-                      />
-                      <Button 
-                        key="delete" 
-                        danger 
-                        icon={<DeleteOutlined style={{ fontSize: '16px' }} />} 
-                        onClick={() => handleDeleteClick(player.id)}
-                        className="flex items-center justify-center !w-8 !h-8 !min-w-0"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-gray-50 rounded-md p-2 text-center">
-                        <div className="text-gray-500 text-xs mb-1">Wins</div>
-                        <div className="text-gray-800">{player.wins}</div>
-                      </div>
-                      <div className="bg-gray-50 rounded-md p-2 text-center">
-                        <div className="text-gray-500 text-xs mb-1">Losses</div>
-                        <div className="text-gray-800">{player.losses}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-gray-50 rounded-md p-2 text-center">
-                        <div className="text-gray-500 text-xs mb-1">Total</div>
-                        <div className="text-gray-800">{player.matches}</div>
-                      </div>
-                      <div className="bg-gray-50 rounded-md p-2 text-center">
-                        <div className="text-gray-500 text-xs mb-1">Win Rate</div>
-                        <div className="text-gray-800">
-                          {((player.wins / (player.matches || 1)) * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </List.Item>
-            )}
+          <PlayerList 
+            players={players}
+            onEditPlayer={handleEditPlayer}
+            onDeletePlayer={handleDeleteClick}
           />
 
           {players.length >= 4 && (
@@ -446,288 +408,72 @@ export default function Home() {
           }
 
           return (
-            <Card 
-              key={currentMatch.id} 
-              title={
-                <div className="flex justify-between items-center">
-                  <span>Match {matches.length}</span>
-                  {matches.length > 1 && !currentMatch.winner && (
-                    <Button
-                      icon={<UndoOutlined />}
-                      onClick={() => handleRevertMatch(currentMatch.id)}
-                      type="text"
-                      className="text-gray-500 hover:text-blue-500"
-                    />
-                  )}
-                </div>
-              }
-              className="shadow-md mb-4"
-              bodyStyle={{ padding: '12px' }}
-            >
-              <div className="space-y-3">
-                {/* Team 1 Selection */}
-                <div 
-                  className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                    selectedWinner === 'team1' 
-                      ? 'bg-green-50 border-2 border-green-500' 
-                      : 'bg-gray-50 border-2 border-transparent hover:border-blue-300'
-                  }`}
-                  onClick={() => !currentMatch.winner && handleSelectWinner('team1')}
-                >
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-gray-700 text-sm">Team 1</h3>
-                    {selectedWinner === 'team1' && (
-                      <CheckCircleFilled className="text-green-500 text-base" />
-                    )}
-                  </div>
-                  <p className="text-gray-600 text-sm mt-1">{currentMatch.team1[0].name} & {currentMatch.team1[1].name}</p>
-                </div>
-
-                {/* Team 2 Selection */}
-                <div 
-                  className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                    selectedWinner === 'team2' 
-                      ? 'bg-green-50 border-2 border-green-500' 
-                      : 'bg-gray-50 border-2 border-transparent hover:border-blue-300'
-                  }`}
-                  onClick={() => !currentMatch.winner && handleSelectWinner('team2')}
-                >
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-gray-700 text-sm">Team 2</h3>
-                    {selectedWinner === 'team2' && (
-                      <CheckCircleFilled className="text-green-500 text-base" />
-                    )}
-                  </div>
-                  <p className="text-gray-600 text-sm mt-1">{currentMatch.team2[0].name} & {currentMatch.team2[1].name}</p>
-                </div>
-
-                {/* Confirm Winner Button */}
-                {!currentMatch.winner && (
-                  <Button 
-                    type="primary"
-                    onClick={() => handleConfirmWinner(currentMatch.id)}
-                    disabled={!selectedWinner}
-                    className="w-full mt-3"
-                    style={{ 
-                      backgroundColor: selectedWinner ? '#52c41a' : undefined,
-                      opacity: selectedWinner ? 1 : 0.5
-                    }}
-                  >
-                    Confirm Winner
-                  </Button>
-                )}
-
-                {currentMatch.winner && (
-                  <div className="text-center text-green-600 font-semibold text-sm mt-3">
-                    {currentMatch.winner === 'team1' ? (
-                      <p>{currentMatch.team1[0].name} & {currentMatch.team1[1].name} won!</p>
-                    ) : (
-                      <p>{currentMatch.team2[0].name} & {currentMatch.team2[1].name} won!</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Card>
+            <CurrentMatch
+              match={currentMatch}
+              matchNumber={matches.length}
+              selectedWinner={selectedWinner}
+              onSelectWinner={handleSelectWinner}
+              onConfirmWinner={handleConfirmWinner}
+              onRevertMatch={handleRevertMatch}
+              showRevert={matches.length > 1}
+            />
           );
         })()}
 
         {matches.length > 0 && (
           <Button
             type="primary"
-            onClick={handleFinishPlaying}
+            onClick={handleFinishClick}
             className="w-full"
+            disabled={matches.length === 1 && !matches[0].winner}
           >
             Finish Tournament
           </Button>
         )}
       </div>
 
-      <Modal
-        title={editingPlayer ? "Edit Player" : "Add Player"}
-        open={isModalVisible}
-        onOk={() => {
-          form.validateFields().then(() => {
-            form.submit();
-          }).catch(() => {
-            // Validation failed, do nothing
-          });
-        }}
-        onCancel={() => {
+      <PlayerForm
+        isVisible={isModalVisible}
+        onClose={() => {
           setIsModalVisible(false);
           setEditingPlayer(null);
-          form.resetFields();
         }}
-        okButtonProps={{
-          disabled: form.getFieldsError().some(({ errors }) => errors.length > 0),
-          loading: form.getFieldsError().some(({ errors }) => errors.length > 0)
-        }}
-      >
-        <Form
-          form={form}
-          onFinish={editingPlayer ? handleUpdatePlayer : handleAddPlayer}
-          layout="vertical"
-          validateTrigger={['onChange', 'onBlur']}
-        >
-          <Form.Item
-            name="name"
-            label="Player Name"
-            rules={[
-              { required: true, message: 'Please enter player name' },
-              {
-                validator: (_, value) => {
-                  if (!value) return Promise.resolve();
-                  
-                  if (value.length >= 32) {
-                    return Promise.reject('Player name cannot exceed 32 characters');
-                  }
+        onSubmit={editingPlayer ? handleUpdatePlayer : handleAddPlayer}
+        editingPlayer={editingPlayer}
+        players={players}
+      />
 
-                  const isDuplicateName = players.some(p => 
-                    (editingPlayer ? p.id !== editingPlayer.id : true) && 
-                    p.name.toLowerCase() === value.toLowerCase()
-                  );
-                  
-                  return isDuplicateName ? Promise.reject('A player with this name already exists') : Promise.resolve();
-                },
-                validateTrigger: ['onChange', 'onBlur']
-              }
-            ]}
-          >
-            <Input 
-              maxLength={32} 
-              className="text-base" 
-              style={{ fontSize: '16px' }}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Finish Playing Confirmation Modal */}
-      <Modal
-        title="Finish Playing"
-        open={isFinishModalVisible}
-        onOk={handleConfirmFinish}
-        onCancel={() => setIsFinishModalVisible(false)}
-      >
-        <p>Are you sure you want to finish playing? This will save the current match data and show the tournament results.</p>
-      </Modal>
-
-      {/* Tournament Results Modal */}
-      <Modal
-        title="Tournament Results"
-        open={isResultsVisible}
-        onCancel={() => setIsResultsVisible(false)}
-        footer={[
-          <Button 
-            key="restart" 
-            type="primary" 
-            danger 
-            icon={<ReloadOutlined />}
-            onClick={handleRestartTournament}
-          >
-            Restart Tournament
-          </Button>
-        ]}
-        width="90%"
-        style={{ maxWidth: '800px', top: '20px' }}
-      >
-        <List
-          dataSource={playerStats}
-          renderItem={(player: PlayerStats & { rank: number }) => (
-            <List.Item>
-              <List.Item.Meta
-                avatar={
-                  <div className="relative">
-                    {player.rank === 1 && (
-                      <div 
-                        className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10 text-sm"
-                        style={{ color: '#eb2f96' }}
-                      >
-                        👑
-                      </div>
-                    )}
-                    <Avatar 
-                      size="default"
-                      icon={<UserOutlined />}
-                      style={{ backgroundColor: player.rank === 1 ? '#eb2f96' : '#1890ff' }}
-                    />
-                  </div>
-                }
-                title={
-                  <Space className="text-sm">
-                    <span className="font-semibold">
-                      {player.rank}. {player.name}
-                    </span>
-                    {player.rank === 1 && <TrophyOutlined style={{ color: '#eb2f96' }} />}
-                  </Space>
-                }
-                description={
-                  <Space size="small" className="text-xs">
-                    <Typography.Text 
-                      type="secondary"
-                      style={{ color: player.winRate >= 50 ? '#3f8600' : '#cf1322' }}
-                    >
-                      Win Rate: {player.winRate.toFixed(1)}%
-                    </Typography.Text>
-                    <Typography.Text 
-                      type="secondary"
-                      style={{ color: '#3f8600' }}
-                    >
-                      Wins: {player.wins}
-                    </Typography.Text>
-                    <Typography.Text 
-                      type="secondary"
-                      style={{ color: '#cf1322' }}
-                    >
-                      Losses: {player.losses}
-                    </Typography.Text>
-                  </Space>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      </Modal>
-
-      {/* Delete Player Confirmation Modal */}
-      <Modal
-        title="Delete Player"
-        open={isDeleteModalVisible}
-        onOk={handleConfirmDelete}
-        onCancel={() => {
+      <DeleteConfirmation
+        isVisible={isDeleteModalVisible}
+        onClose={() => {
           setIsDeleteModalVisible(false);
           setPlayerToDelete(null);
         }}
-        okText="Yes, Delete"
-        cancelText="No, Keep Player"
-        okButtonProps={{ danger: true }}
-      >
-        <p>Are you sure you want to delete this player? This will:</p>
-        <ul className="list-disc ml-6 mt-2">
-          <li>Remove the player from the tournament</li>
-          <li>Remove any unfinished matches they are part of</li>
-          <li>This action cannot be undone</li>
-        </ul>
-      </Modal>
+        onConfirm={handleConfirmDelete}
+      />
 
-      {/* Revert Match Confirmation Modal */}
-      <Modal
-        title="Revert Match"
-        open={isRevertModalVisible}
-        onOk={handleConfirmRevert}
-        onCancel={() => {
+      <RevertMatchConfirmation
+        isVisible={isRevertModalVisible}
+        onClose={() => {
           setIsRevertModalVisible(false);
           setMatchToRevert(null);
         }}
-        okText="Yes, Revert"
-        cancelText="No, Keep Current"
-      >
-        <p>Are you sure you want to revert this match? This will:</p>
-        <ul className="list-disc ml-6 mt-2">
-          <li>Remove this match and any matches after it</li>
-          <li>Revert all player statistics for these matches</li>
-          <li>This action cannot be undone</li>
-        </ul>
-      </Modal>
+        onConfirm={handleConfirmRevert}
+      />
+
+      <FinishConfirmation
+        isVisible={isFinishConfirmVisible}
+        onClose={() => setIsFinishConfirmVisible(false)}
+        onConfirm={handleConfirmFinish}
+      />
+
+      <TournamentResults
+        isVisible={isResultsVisible}
+        onClose={() => {}}
+        onRestart={handleRestartTournament}
+        playerStats={playerStats}
+        closable={false}
+      />
     </main>
   );
 }
