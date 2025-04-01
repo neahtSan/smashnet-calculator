@@ -5,6 +5,7 @@ import { Input, Button, List, Card, Modal, Form, message, Avatar, Space, Typogra
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined, UndoOutlined, CheckCircleFilled } from '@ant-design/icons';
 import { Player, Match, PlayerStats } from '@/types/interface';
 import { findBestMatch, updatePlayerStats, findFirstMatch, findSecondMatch } from '@/utils/matchmaker';
+import { MIN_PLAYERS, MAX_PLAYERS } from '@/utils/groupPlayer';
 import { PlayerList } from '@/components/PlayerList';
 import { CurrentMatch } from '@/components/CurrentMatch';
 import { TournamentResults } from '@/components/TournamentResults';
@@ -17,7 +18,7 @@ export default function Home() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [editingPlayer, setEditingPlayer] = useState<Player | undefined>(undefined);
   const [form] = Form.useForm();
   const [isCreatingMatch, setIsCreatingMatch] = useState(false);
   const [isMatchButtonDisabled, setIsMatchButtonDisabled] = useState(true);
@@ -54,14 +55,14 @@ export default function Home() {
     }
   }, [players.length]);
 
-  const handleAddPlayer = (values: { name: string }) => {
-    if (players.length >= 7) {
-      message.error('Maximum 7 players allowed');
+  const handleAddPlayer = (name: string) => {
+    if (players.length >= MAX_PLAYERS) {
+      message.error(`Maximum ${MAX_PLAYERS} players allowed`);
       return;
     }
 
     // Check for duplicate names
-    const isDuplicateName = players.some(p => p.name.toLowerCase() === values.name.toLowerCase());
+    const isDuplicateName = players.some(p => p.name.toLowerCase() === name.toLowerCase());
     if (isDuplicateName) {
       message.error('A player with this name already exists');
       return;
@@ -69,7 +70,7 @@ export default function Home() {
 
     const newPlayer: Player = {
       id: Date.now().toString(),
-      name: values.name,
+      name: name,
       wins: 0,
       losses: 0,
       matches: 0,
@@ -85,13 +86,13 @@ export default function Home() {
     setIsModalVisible(true);
   };
 
-  const handleUpdatePlayer = (values: { name: string }) => {
+  const handleUpdatePlayer = (name: string) => {
     if (!editingPlayer) return;
 
     // Check for duplicate names, excluding the current player being edited
     const isDuplicateName = players.some(p => 
       p.id !== editingPlayer.id && 
-      p.name.toLowerCase() === values.name.toLowerCase()
+      p.name.toLowerCase() === name.toLowerCase()
     );
     if (isDuplicateName) {
       message.error('A player with this name already exists');
@@ -99,10 +100,10 @@ export default function Home() {
     }
 
     setPlayers(players.map(p => 
-      p.id === editingPlayer.id ? { ...p, name: values.name } : p
+      p.id === editingPlayer.id ? { ...p, name: name } : p
     ));
     setIsModalVisible(false);
-    setEditingPlayer(null);
+    setEditingPlayer(undefined);
     form.resetFields();
   };
 
@@ -129,8 +130,8 @@ export default function Home() {
   };
 
   const handleCreateMatch = () => {
-    if (players.length < 4) {
-      message.error('Need at least 4 players to create a match');
+    if (players.length < MIN_PLAYERS) {
+      message.error(`Need at least ${MIN_PLAYERS} players to create a match`);
       return;
     }
 
@@ -185,6 +186,13 @@ export default function Home() {
       setMatches([...matches, newMatch]);
       setIsCreatingMatch(false);
       setIsMatchButtonDisabled(true); // Disable button after creating a match
+
+      // Save to localStorage
+      localStorage.setItem('tournamentData', JSON.stringify({
+        players,
+        matches: [...matches, newMatch],
+        stats: playerStats
+      }));
     } catch (error) {
       console.error('Error creating match:', error);
       message.error('Error creating match');
@@ -356,14 +364,14 @@ export default function Home() {
         <div className="bg-white rounded-lg shadow-md p-4 mb-4">
           <h1 className="text-xl font-bold text-center text-gray-800 mb-4">Smashnet Matchmaker</h1>
           
-          {players.length < 4 && (
+          {players.length < MIN_PLAYERS && (
             <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
               <p className="text-sm text-blue-700 text-center">
-                Please add at least 4 players to start a match.
-                {players.length >= 7 ? (
-                  <span className="block mt-1">Maximum number of players (7) reached.</span>
+                Please add at least {MIN_PLAYERS} players to start a match.
+                {players.length >= MAX_PLAYERS ? (
+                  <span className="block mt-1">Maximum number of players ({MAX_PLAYERS}) reached.</span>
                 ) : (
-                  <span className="block mt-1">You can add up to 7 players.</span>
+                  <span className="block mt-1">You can add up to {MAX_PLAYERS} players.</span>
                 )}
               </p>
             </div>
@@ -374,9 +382,9 @@ export default function Home() {
             icon={<PlusOutlined />} 
             onClick={() => setIsModalVisible(true)}
             className="w-full mb-4"
-            disabled={players.length >= 7}
+            disabled={players.length >= MAX_PLAYERS}
           >
-            Add Player {players.length >= 7 ? "(Max 7)" : ""}
+            Add Player
           </Button>
 
           <PlayerList 
@@ -385,7 +393,7 @@ export default function Home() {
             onDeletePlayer={handleDeleteClick}
           />
 
-          {players.length >= 4 && (
+          {players.length >= MIN_PLAYERS && (
             <Button 
               type="primary" 
               onClick={handleCreateMatch}
@@ -436,7 +444,7 @@ export default function Home() {
         isVisible={isModalVisible}
         onClose={() => {
           setIsModalVisible(false);
-          setEditingPlayer(null);
+          setEditingPlayer(undefined);
         }}
         onSubmit={editingPlayer ? handleUpdatePlayer : handleAddPlayer}
         editingPlayer={editingPlayer}

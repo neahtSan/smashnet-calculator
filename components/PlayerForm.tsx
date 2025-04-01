@@ -1,73 +1,63 @@
 import { Modal, Form, Input } from 'antd';
 import { Player } from '@/types/interface';
+import { MAX_PLAYERS } from '@/utils/groupPlayer';
 
 interface PlayerFormProps {
   isVisible: boolean;
   onClose: () => void;
-  onSubmit: (values: { name: string }) => void;
-  editingPlayer: Player | null;
+  onSubmit: (name: string) => void;
+  editingPlayer?: Player;
   players: Player[];
 }
 
-export const PlayerForm = ({
-  isVisible,
-  onClose,
-  onSubmit,
-  editingPlayer,
-  players,
-}: PlayerFormProps) => {
+export const PlayerForm = ({ isVisible, onClose, onSubmit, editingPlayer, players }: PlayerFormProps) => {
   const [form] = Form.useForm();
+
+  const handleSubmit = () => {
+    form.validateFields().then(values => {
+      onSubmit(values.name);
+      form.resetFields();
+    });
+  };
+
+  const handleCancel = () => {
+    form.resetFields();
+    onClose();
+  };
 
   return (
     <Modal
-      title={editingPlayer ? "Edit Player" : "Add Player"}
+      title={editingPlayer ? 'Edit Player' : 'Add Player'}
       open={isVisible}
-      onOk={() => {
-        form.validateFields().then(values => {
-          form.resetFields();
-          onSubmit(values);
-        });
+      onOk={handleSubmit}
+      onCancel={handleCancel}
+      okButtonProps={{
+        disabled: !editingPlayer && players.length >= MAX_PLAYERS
       }}
-      onCancel={() => {
-        form.resetFields();
-        onClose();
-      }}
-      okText={editingPlayer ? "Save Changes" : "Add Player"}
     >
       <Form
         form={form}
         layout="vertical"
-        initialValues={editingPlayer ? { name: editingPlayer.name } : undefined}
+        initialValues={{ name: editingPlayer?.name || '' }}
       >
         <Form.Item
           name="name"
           label="Player Name"
           rules={[
-            { required: true, message: 'Please enter player name' },
+            { required: true, message: 'Please enter a name' },
+            { max: 32, message: 'Name cannot exceed 32 characters' },
             {
               validator: (_, value) => {
-                if (!value) return Promise.resolve();
-                
-                if (value.length >= 32) {
-                  return Promise.reject('Player name cannot exceed 32 characters');
-                }
-
-                const isDuplicateName = players.some(p => 
-                  (editingPlayer ? p.id !== editingPlayer.id : true) && 
-                  p.name.toLowerCase() === value.toLowerCase()
-                );
-                
-                return isDuplicateName ? Promise.reject('A player with this name already exists') : Promise.resolve();
-              },
-              validateTrigger: ['onChange', 'onBlur']
+                if (!value || editingPlayer?.name === value) return Promise.resolve();
+                const nameExists = players.some(p => p.name === value);
+                return nameExists
+                  ? Promise.reject('This name is already taken')
+                  : Promise.resolve();
+              }
             }
           ]}
         >
-          <Input 
-            maxLength={32} 
-            className="text-base" 
-            style={{ fontSize: '16px' }}
-          />
+          <Input maxLength={32} />
         </Form.Item>
       </Form>
     </Modal>
