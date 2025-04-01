@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Input, Button, List, Card, Modal, Form, message, Avatar, Space, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TrophyOutlined, ReloadOutlined, UndoOutlined, CheckCircleFilled } from '@ant-design/icons';
-import { Player, Match, PlayerStats } from '@/interface/player';
+import { Player, PlayerStats } from '../interface/player';
+import { Match } from '@/interface';
 import { findBestMatch, updatePlayerStats, findFirstMatch, findSecondMatch } from '@/utils/matchmaker';
 import { MIN_PLAYERS, MAX_PLAYERS } from '@/utils/groupPlayer';
 import { PlayerList } from '@/components/PlayerList';
