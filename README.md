@@ -219,5 +219,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-Made with ❤️ by [neahtSan](https://github.com/neahtSan)
+  <img src="https://avatars.githubusercontent.com/neahtSan" alt="neahtSan" width="100" height="100" style="border-radius: 50%; margin-bottom: 10px;">
+  <p>Made with ❤️ by <a href="https://github.com/neahtSan">neahtSan</a></p>
+  <p>Full-stack Developer | Badminton Enthusiast</p>
 </div>
+
