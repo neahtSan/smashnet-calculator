@@ -325,73 +325,74 @@ const handleCreateMatch = () => {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center py-8">
-      <div className="w-full max-w-md px-4">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">Badminton Matchmaker</h1>
+    <main className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <div className="w-full max-w-md mx-auto px-4 py-6">
+        <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+          <h1 className="text-xl font-bold text-center text-gray-800 mb-4">Smashnet Matchmaker</h1>
           
-          <div className="flex justify-center">
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
-              onClick={() => setIsModalVisible(true)}
-              className="w-full max-w-xs mb-6"
-              disabled={players.length >= 7}
-            >
-              Add Player
-            </Button>
-          </div>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />} 
+            onClick={() => setIsModalVisible(true)}
+            className="w-full mb-4"
+            disabled={players.length >= 7}
+          >
+            Add Player
+          </Button>
 
           <List
-            className="mb-6"
+            className="mb-4"
             dataSource={players}
-            renderItem={(player: Player) => (
+            renderItem={player => (
               <List.Item
-                className="bg-white rounded-lg mb-3 shadow-sm hover:shadow-md transition-shadow duration-200 p-4"
+                className="bg-white rounded-lg mb-2 shadow-sm hover:shadow-md transition-shadow duration-200 p-3"
               >
                 <div className="w-full">
-                  <div className="font-semibold text-lg text-gray-800 mb-3 text-center">
-                    {player.name}
-                  </div>
-                  <div className="text-sm flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <div className="grid grid-cols-2 gap-2 flex-1">
-                        <div className="bg-gray-50 rounded-md p-2 text-center">
-                          <div className="text-gray-500 text-xs mb-1">Wins</div>
-                          <div className="text-gray-800 font-medium">{player.wins}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-md p-2 text-center">
-                          <div className="text-gray-500 text-xs mb-1">Losses</div>
-                          <div className="text-gray-800 font-medium">{player.losses}</div>
-                        </div>
+                  <div className="flex items-center mb-3 relative">
+                    <div className="absolute left-1/2 -translate-x-1/2">
+                      <div className="font-semibold text-base text-gray-800">
+                        {player.name}
                       </div>
+                    </div>
+                    <div className="flex gap-2 w-[72px] ml-auto">
                       <Button 
                         key="edit" 
-                        icon={<EditOutlined style={{ fontSize: '18px' }} />} 
+                        icon={<EditOutlined style={{ fontSize: '16px' }} />} 
                         onClick={() => handleEditPlayer(player)}
-                        className="flex items-center justify-center !w-9 !h-9 self-center"
+                        className="flex items-center justify-center !w-8 !h-8 !min-w-0"
                       />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="grid grid-cols-2 gap-2 flex-1">
-                        <div className="bg-gray-50 rounded-md p-2 text-center">
-                          <div className="text-gray-500 text-xs mb-1">Total Matches</div>
-                          <div className="text-gray-800 font-medium">{player.matches}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-md p-2 text-center">
-                          <div className="text-gray-500 text-xs mb-1">Win Rate</div>
-                          <div className="text-gray-800 font-medium">
-                            {((player.wins / (player.matches || 1)) * 100).toFixed(1)}%
-                          </div>
-                        </div>
-                      </div>
                       <Button 
                         key="delete" 
                         danger 
-                        icon={<DeleteOutlined style={{ fontSize: '18px' }} />} 
+                        icon={<DeleteOutlined style={{ fontSize: '16px' }} />} 
                         onClick={() => handleDeletePlayer(player.id)}
-                        className="flex items-center justify-center !w-9 !h-9 self-center"
+                        className="flex items-center justify-center !w-8 !h-8 !min-w-0"
                       />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-gray-50 rounded-md p-2 text-center">
+                        <div className="text-gray-500 text-xs mb-1">Wins</div>
+                        <div className="text-gray-800">{player.wins}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-md p-2 text-center">
+                        <div className="text-gray-500 text-xs mb-1">Losses</div>
+                        <div className="text-gray-800">{player.losses}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-gray-50 rounded-md p-2 text-center">
+                        <div className="text-gray-500 text-xs mb-1">Total</div>
+                        <div className="text-gray-800">{player.matches}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-md p-2 text-center">
+                        <div className="text-gray-500 text-xs mb-1">Win Rate</div>
+                        <div className="text-gray-800">
+                          {((player.wins / (player.matches || 1)) * 100).toFixed(1)}%
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -403,7 +404,7 @@ const handleCreateMatch = () => {
             <Button 
               type="primary" 
               onClick={handleCreateMatch}
-              className="w-full mb-6"
+              className="w-full mb-4"
               disabled={isMatchButtonDisabled}
             >
               {isCreatingMatch ? 'Creating Match...' : 'Create New Match'}
@@ -411,109 +412,107 @@ const handleCreateMatch = () => {
           )}
         </div>
 
-        <div className="space-y-4">
-          {matches.length > 0 && (() => {
-            const currentMatch = matches[matches.length - 1];
-            
-            // Safety check for team members
-            if (!currentMatch.team1 || !currentMatch.team2 || 
-                !currentMatch.team1[0] || !currentMatch.team1[1] || 
-                !currentMatch.team2[0] || !currentMatch.team2[1]) {
-              console.error('Invalid match data:', currentMatch);
-              return null;
-            }
+        {matches.length > 0 && (() => {
+          const currentMatch = matches[matches.length - 1];
+          
+          if (!currentMatch.team1 || !currentMatch.team2 || 
+              !currentMatch.team1[0] || !currentMatch.team1[1] || 
+              !currentMatch.team2[0] || !currentMatch.team2[1]) {
+            console.error('Invalid match data:', currentMatch);
+            return null;
+          }
 
-            return (
-              <Card 
-                key={currentMatch.id} 
-                title={
-                  <div className="flex justify-between items-center">
-                    <span>Match {matches.length}</span>
-                    {matches.length > 1 && !currentMatch.winner && (
-                      <Button
-                        icon={<UndoOutlined />}
-                        onClick={() => handleRevertMatch(currentMatch.id)}
-                        type="text"
-                        className="text-gray-500 hover:text-blue-500"
-                      />
-                    )}
-                  </div>
-                }
-                className="shadow-md"
-              >
-                <div className="space-y-4">
-                  {/* Team 1 Selection */}
-                  <div 
-                    className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                      selectedWinner === 'team1' 
-                        ? 'bg-green-50 border-2 border-green-500' 
-                        : 'bg-gray-50 border-2 border-transparent hover:border-blue-300'
-                    }`}
-                    onClick={() => !currentMatch.winner && handleSelectWinner('team1')}
-                  >
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-semibold text-gray-700">Team 1</h3>
-                      {selectedWinner === 'team1' && (
-                        <CheckCircleFilled className="text-green-500 text-lg" />
-                      )}
-                    </div>
-                    <p className="text-gray-600 mt-2">{currentMatch.team1[0].name} & {currentMatch.team1[1].name}</p>
-                  </div>
-
-                  {/* Team 2 Selection */}
-                  <div 
-                    className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                      selectedWinner === 'team2' 
-                        ? 'bg-green-50 border-2 border-green-500' 
-                        : 'bg-gray-50 border-2 border-transparent hover:border-blue-300'
-                    }`}
-                    onClick={() => !currentMatch.winner && handleSelectWinner('team2')}
-                  >
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-semibold text-gray-700">Team 2</h3>
-                      {selectedWinner === 'team2' && (
-                        <CheckCircleFilled className="text-green-500 text-lg" />
-                      )}
-                    </div>
-                    <p className="text-gray-600 mt-2">{currentMatch.team2[0].name} & {currentMatch.team2[1].name}</p>
-                  </div>
-
-                  {/* Confirm Winner Button */}
-                  {!currentMatch.winner && (
-                    <Button 
-                      type="primary"
-                      onClick={() => handleConfirmWinner(currentMatch.id)}
-                      disabled={!selectedWinner}
-                      className="w-full mt-4"
-                      style={{ 
-                        backgroundColor: selectedWinner ? '#52c41a' : undefined,
-                        opacity: selectedWinner ? 1 : 0.5
-                      }}
-                    >
-                      Confirm Winner
-                    </Button>
-                  )}
-
-                  {currentMatch.winner && (
-                    <div className="text-center text-green-600 font-semibold mt-4">
-                      {currentMatch.winner === 'team1' ? (
-                        <p>{currentMatch.team1[0].name} & {currentMatch.team1[1].name} won!</p>
-                      ) : (
-                        <p>{currentMatch.team2[0].name} & {currentMatch.team2[1].name} won!</p>
-                      )}
-                    </div>
+          return (
+            <Card 
+              key={currentMatch.id} 
+              title={
+                <div className="flex justify-between items-center">
+                  <span>Match {matches.length}</span>
+                  {matches.length > 1 && !currentMatch.winner && (
+                    <Button
+                      icon={<UndoOutlined />}
+                      onClick={() => handleRevertMatch(currentMatch.id)}
+                      type="text"
+                      className="text-gray-500 hover:text-blue-500"
+                    />
                   )}
                 </div>
-              </Card>
-            );
-          })()}
-        </div>
+              }
+              className="shadow-md mb-4"
+              bodyStyle={{ padding: '12px' }}
+            >
+              <div className="space-y-3">
+                {/* Team 1 Selection */}
+                <div 
+                  className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                    selectedWinner === 'team1' 
+                      ? 'bg-green-50 border-2 border-green-500' 
+                      : 'bg-gray-50 border-2 border-transparent hover:border-blue-300'
+                  }`}
+                  onClick={() => !currentMatch.winner && handleSelectWinner('team1')}
+                >
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-gray-700 text-sm">Team 1</h3>
+                    {selectedWinner === 'team1' && (
+                      <CheckCircleFilled className="text-green-500 text-base" />
+                    )}
+                  </div>
+                  <p className="text-gray-600 text-sm mt-1">{currentMatch.team1[0].name} & {currentMatch.team1[1].name}</p>
+                </div>
+
+                {/* Team 2 Selection */}
+                <div 
+                  className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                    selectedWinner === 'team2' 
+                      ? 'bg-green-50 border-2 border-green-500' 
+                      : 'bg-gray-50 border-2 border-transparent hover:border-blue-300'
+                  }`}
+                  onClick={() => !currentMatch.winner && handleSelectWinner('team2')}
+                >
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-gray-700 text-sm">Team 2</h3>
+                    {selectedWinner === 'team2' && (
+                      <CheckCircleFilled className="text-green-500 text-base" />
+                    )}
+                  </div>
+                  <p className="text-gray-600 text-sm mt-1">{currentMatch.team2[0].name} & {currentMatch.team2[1].name}</p>
+                </div>
+
+                {/* Confirm Winner Button */}
+                {!currentMatch.winner && (
+                  <Button 
+                    type="primary"
+                    onClick={() => handleConfirmWinner(currentMatch.id)}
+                    disabled={!selectedWinner}
+                    className="w-full mt-3"
+                    style={{ 
+                      backgroundColor: selectedWinner ? '#52c41a' : undefined,
+                      opacity: selectedWinner ? 1 : 0.5
+                    }}
+                  >
+                    Confirm Winner
+                  </Button>
+                )}
+
+                {currentMatch.winner && (
+                  <div className="text-center text-green-600 font-semibold text-sm mt-3">
+                    {currentMatch.winner === 'team1' ? (
+                      <p>{currentMatch.team1[0].name} & {currentMatch.team1[1].name} won!</p>
+                    ) : (
+                      <p>{currentMatch.team2[0].name} & {currentMatch.team2[1].name} won!</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Card>
+          );
+        })()}
 
         {matches.length > 0 && (
           <Button
             type="primary"
             onClick={handleFinishPlaying}
-            className="w-full mt-4"
+            className="w-full"
           >
             Finish Tournament
           </Button>
@@ -601,40 +600,41 @@ const handleCreateMatch = () => {
             Restart Tournament
           </Button>
         ]}
-        width={800}
+        width="90%"
+        style={{ maxWidth: '800px', top: '20px' }}
       >
         <List
           dataSource={playerStats}
-          renderItem={(player: PlayerStats & { rank: number }, index) => (
+          renderItem={(player: PlayerStats & { rank: number }) => (
             <List.Item>
               <List.Item.Meta
                 avatar={
                   <div className="relative">
                     {player.rank === 1 && (
                       <div 
-                        className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10"
+                        className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10 text-sm"
                         style={{ color: '#eb2f96' }}
                       >
                         👑
                       </div>
                     )}
                     <Avatar 
-                      size="large" 
+                      size="default"
                       icon={<UserOutlined />}
                       style={{ backgroundColor: player.rank === 1 ? '#eb2f96' : '#1890ff' }}
                     />
                   </div>
                 }
                 title={
-                  <Space>
-                    <span className="text-lg font-semibold">
+                  <Space className="text-sm">
+                    <span className="font-semibold">
                       {player.rank}. {player.name}
                     </span>
                     {player.rank === 1 && <TrophyOutlined style={{ color: '#eb2f96' }} />}
                   </Space>
                 }
                 description={
-                  <Space size="large">
+                  <Space size="small" className="text-xs">
                     <Typography.Text 
                       type="secondary"
                       style={{ color: player.winRate >= 50 ? '#3f8600' : '#cf1322' }}
