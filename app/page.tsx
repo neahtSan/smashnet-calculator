@@ -481,8 +481,7 @@ export default function Home() {
         isVisible={isResultsVisible}
         onClose={() => {}}
         onRestart={handleRestartTournament}
-        playerStats={playerStats}
-        closable={false}
+        players={playerStats}
       />
     </main>
   );

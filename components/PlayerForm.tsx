@@ -45,7 +45,7 @@ export const PlayerForm = ({ isVisible, onClose, onSubmit, editingPlayer, player
           label="Player Name"
           rules={[
             { required: true, message: 'Please enter a name' },
-            { max: 32, message: 'Name cannot exceed 32 characters' },
+            { max: 16, message: 'Name cannot exceed 16 characters' },
             {
               validator: (_, value) => {
                 if (!value || editingPlayer?.name === value) return Promise.resolve();
@@ -58,8 +58,10 @@ export const PlayerForm = ({ isVisible, onClose, onSubmit, editingPlayer, player
           ]}
         >
           <Input 
-            maxLength={32} 
+            maxLength={16} 
             style={{ fontSize: '16px' }}
+            showCount
+            status={form.getFieldError('name').length > 0 ? 'error' : ''}
           />
         </Form.Item>
       </Form>

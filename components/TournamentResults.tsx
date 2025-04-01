@@ -1,60 +1,80 @@
-import { Modal, Button, List, Avatar, Space, Typography } from 'antd';
-import { UserOutlined, TrophyOutlined, ReloadOutlined, CalculatorOutlined } from '@ant-design/icons';
+import { Modal, Button, List, Avatar, Space, Typography, Spin } from 'antd';
+import { UserOutlined, TrophyOutlined } from '@ant-design/icons';
 import { PlayerStats } from '@/types/interface';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { BadmintonCostCalculator } from './BadmintonCostCalculator';
 
 interface TournamentResultsProps {
   isVisible: boolean;
   onClose: () => void;
+  players: PlayerStats[];
   onRestart: () => void;
-  playerStats: PlayerStats[];
-  closable?: boolean;
 }
 
 export const TournamentResults = ({
   isVisible,
   onClose,
-  onRestart,
-  playerStats,
-  closable = true
+  players,
+  onRestart
 }: TournamentResultsProps) => {
-  const [isCalculatorVisible, setIsCalculatorVisible] = useState(false);
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCalculateCosts = () => {
+    setIsLoading(true);
+    // Get the original player order from localStorage
+    const savedData = localStorage.getItem('tournamentData');
+    if (savedData) {
+      const { players: originalPlayers } = JSON.parse(savedData);
+      // Map the original player order to include the stats from the results
+      const orderedPlayers = originalPlayers.map((originalPlayer: any) => {
+        const playerStats = players.find(p => p.name === originalPlayer.name);
+        return {
+          name: originalPlayer.name,
+          wins: playerStats?.wins || 0,
+          losses: playerStats?.losses || 0,
+          winRate: playerStats?.winRate || 0,
+          totalMatches: playerStats?.totalMatches || 0,
+          rank: playerStats?.rank || 0
+        };
+      });
+      localStorage.setItem('calculatorPlayers', JSON.stringify(orderedPlayers));
+    }
+    router.push('/calculator');
+  };
 
   return (
-    <>
-      <Modal
-        title="Tournament Results"
-        open={isVisible}
-        onCancel={onClose}
-        footer={
-          <div className="flex justify-between gap-2">
-            <Button
-              type="primary"
-              danger
-              icon={<ReloadOutlined />}
-              onClick={onRestart}
-              className="flex-1"
-            >
-              Restart
-            </Button>
-            <Button
-              type="primary"
-              icon={<CalculatorOutlined />}
-              onClick={() => setIsCalculatorVisible(true)}
-              className="flex-1"
-            >
-              Calculate
-            </Button>
-          </div>
-        }
-        closable={closable}
-        maskClosable={closable}
-        width="90%"
-        style={{ maxWidth: '800px', top: '20px' }}
-      >
+    <Modal
+      title="Tournament Results"
+      open={isVisible}
+      onCancel={onClose}
+      width="90%"
+      style={{ maxWidth: '800px' }}
+      footer={
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            type="primary"
+            danger
+            onClick={onRestart}
+            className="w-full sm:w-auto order-2 sm:order-1"
+            disabled={isLoading}
+          >
+            Restart Tournament
+          </Button>
+          <Button
+            type="primary"
+            onClick={handleCalculateCosts}
+            className="w-full sm:w-auto order-1 sm:order-2"
+            loading={isLoading}
+          >
+            Calculate Costs
+          </Button>
+        </div>
+      }
+    >
+      <Spin spinning={isLoading}>
         <List
-          dataSource={playerStats}
+          dataSource={players}
           renderItem={(player) => (
             <List.Item>
               <List.Item.Meta
@@ -109,13 +129,7 @@ export const TournamentResults = ({
             </List.Item>
           )}
         />
-      </Modal>
-
-      <BadmintonCostCalculator
-        isVisible={isCalculatorVisible}
-        onClose={() => setIsCalculatorVisible(false)}
-        players={playerStats}
-      />
-    </>
+      </Spin>
+    </Modal>
   );
 }; 
