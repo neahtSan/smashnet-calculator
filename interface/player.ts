@@ -16,10 +16,21 @@ export interface PlayerStats {
   hours?: number;
 }
 
-export interface PlayerFormProps {
-  visible: boolean;
+export interface PlayerFormComponentProps {
+  isVisible: boolean;
   onClose: () => void;
-  onSubmit: (player: Player) => void;
-  initialValues?: Partial<Player>;
-  title?: string;
+  onSubmit: (name: string) => void;
+  editingPlayer?: Player;
+  players: Player[];
+}
+
+export interface PlayerListProps {
+  players: Player[];
+  onEditPlayer: (player: Player) => void;
+  onDeletePlayer: (playerId: string) => void;
+}
+
+export interface PlayerListWithHoursProps {
+  players: PlayerStats[];
+  onPlayersChange: (players: PlayerStats[]) => void;
 } 

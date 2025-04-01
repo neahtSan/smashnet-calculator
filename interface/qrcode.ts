@@ -17,4 +17,14 @@ export interface VerificationModalProps {
   onCancel: () => void;
   onConfirm: () => void;
   promptPayNumber: string;
+}
+
+export interface PromptPaySectionProps {
+  playerCosts: Array<{
+    name: string;
+    sharedCost: number;
+    customExpenses: number;
+    total: number;
+  }>;
+  totalCost: number;
 } 

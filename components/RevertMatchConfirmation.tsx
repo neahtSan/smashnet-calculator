@@ -1,10 +1,5 @@
 import { Modal } from 'antd';
-
-interface RevertMatchConfirmationProps {
-  isVisible: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-}
+import { RevertMatchConfirmationProps } from '@/interface';
 
 export const RevertMatchConfirmation = ({
   isVisible,

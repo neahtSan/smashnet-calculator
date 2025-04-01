@@ -1,13 +1,8 @@
 import { useState } from 'react';
 import { Button, List, Typography, Space, Switch, InputNumber } from 'antd';
 import { UserAddOutlined, UserDeleteOutlined } from '@ant-design/icons';
-import { PlayerStats } from '@/interface';
+import { PlayerStats, PlayerListWithHoursProps } from '@/interface';
 import { PlayerForm } from '../PlayerForm';
-
-interface PlayerListWithHoursProps {
-  players: PlayerStats[];
-  onPlayersChange: (players: PlayerStats[]) => void;
-}
 
 export const PlayerListWithHours = ({ players, onPlayersChange }: PlayerListWithHoursProps) => {
   const [usePlayerHours, setUsePlayerHours] = useState(false);

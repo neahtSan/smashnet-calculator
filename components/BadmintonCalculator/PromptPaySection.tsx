@@ -5,16 +5,7 @@ import { VerificationModal } from './VerificationModal';
 import { QRCodeModal } from './QRCodeModal';
 import generatePayload from 'promptpay-qr';
 import { formatPhoneNumber, validatePromptPay } from '@/utils/calculatorLogic';
-
-interface PromptPaySectionProps {
-  playerCosts: Array<{
-    name: string;
-    sharedCost: number;
-    customExpenses: number;
-    total: number;
-  }>;
-  totalCost: number;
-}
+import { PromptPaySectionProps } from '@/interface';
 
 export const PromptPaySection = ({ playerCosts, totalCost }: PromptPaySectionProps) => {
   const [promptPayNumber, setPromptPayNumber] = useState<string>('');

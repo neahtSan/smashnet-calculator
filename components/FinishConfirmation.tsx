@@ -1,10 +1,5 @@
 import { Modal } from 'antd';
-
-interface FinishConfirmationProps {
-  isVisible: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-}
+import { FinishConfirmationProps } from '@/interface';
 
 export const FinishConfirmation = ({ isVisible, onClose, onConfirm }: FinishConfirmationProps) => {
   return (

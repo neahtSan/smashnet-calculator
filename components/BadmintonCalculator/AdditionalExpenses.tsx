@@ -1,13 +1,7 @@
 import { Typography, Input, InputNumber, Button, Select, Radio } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { CustomExpense, PlayerStats } from '@/interface';
+import { CustomExpense, PlayerStats, AdditionalExpensesProps } from '@/interface';
 import { calculateTotalCustomExpenses } from '@/utils/calculatorLogic';
-
-interface AdditionalExpensesProps {
-  customExpenses: CustomExpense[];
-  players: PlayerStats[];
-  onCustomExpensesChange: (expenses: CustomExpense[]) => void;
-}
 
 export const AdditionalExpenses = ({ 
   customExpenses, 
@@ -89,7 +83,7 @@ export const AdditionalExpenses = ({
               className="w-full"
               allowClear
               virtual={false}
-              dropdownMatchSelectWidth={false}
+              popupMatchSelectWidth={false}
               maxTagCount="responsive"
               showSearch={false}
               onDropdownVisibleChange={(visible) => {

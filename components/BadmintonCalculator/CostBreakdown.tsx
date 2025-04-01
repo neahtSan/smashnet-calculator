@@ -1,14 +1,6 @@
 import { Typography, Space, Divider } from 'antd';
-import { PlayerStats, CustomExpense, CourtFee, Shuttlecock } from '@/interface';
+import { PlayerStats, CustomExpense, CourtFee, Shuttlecock, CostBreakdownProps } from '@/interface';
 import { calculateTotalPlayerHours, calculateTotalCustomExpenses, calculatePlayerCosts } from '@/utils/calculatorLogic';
-
-interface CostBreakdownProps {
-  players: PlayerStats[];
-  courtFee: CourtFee;
-  shuttlecock: Shuttlecock;
-  customExpenses: CustomExpense[];
-  totalCost: number;
-}
 
 export const CostBreakdown = ({ 
   players, 

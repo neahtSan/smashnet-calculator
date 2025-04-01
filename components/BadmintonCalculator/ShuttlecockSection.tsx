@@ -1,10 +1,5 @@
 import { Typography, InputNumber } from 'antd';
-import { Shuttlecock } from '@/interface';
-
-interface ShuttlecockSectionProps {
-  shuttlecock: Shuttlecock;
-  onShuttlecockChange: (shuttlecock: Shuttlecock) => void;
-}
+import { Shuttlecock, ShuttlecockSectionProps } from '@/interface';
 
 export const ShuttlecockSection = ({ shuttlecock, onShuttlecockChange }: ShuttlecockSectionProps) => {
   const totalShuttlecockCost = shuttlecock.quantity * shuttlecock.pricePerPiece;

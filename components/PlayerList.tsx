@@ -1,12 +1,6 @@
 import { List, Button } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Player } from '@/interface';
-
-interface PlayerListProps {
-  players: Player[];
-  onEditPlayer: (player: Player) => void;
-  onDeletePlayer: (playerId: string) => void;
-}
+import { Player, PlayerListProps } from '@/interface';
 
 export const PlayerList = ({ players, onEditPlayer, onDeletePlayer }: PlayerListProps) => {
   return (

@@ -1,15 +1,8 @@
 import { Modal, Button, List, Avatar, Space, Typography, Spin } from 'antd';
 import { UserOutlined, TrophyOutlined } from '@ant-design/icons';
-import { PlayerStats } from '@/interface';
+import { PlayerStats, TournamentResultsProps } from '@/interface';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-interface TournamentResultsProps {
-  isVisible: boolean;
-  onClose: () => void;
-  players: PlayerStats[];
-  onRestart: () => void;
-}
 
 export const TournamentResults = ({
   isVisible,

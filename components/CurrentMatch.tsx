@@ -1,16 +1,6 @@
 import { Card, Button } from 'antd';
 import { UndoOutlined, CheckCircleFilled } from '@ant-design/icons';
-import { Match } from '@/types/interface';
-
-interface CurrentMatchProps {
-  match: Match;
-  matchNumber: number;
-  selectedWinner: 'team1' | 'team2' | null;
-  onSelectWinner: (team: 'team1' | 'team2') => void;
-  onConfirmWinner: (matchId: string) => void;
-  onRevertMatch?: (matchId: string) => void;
-  showRevert?: boolean;
-}
+import { Match, CurrentMatchProps } from '@/interface';
 
 export const CurrentMatch = ({
   match,

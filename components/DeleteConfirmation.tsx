@@ -1,15 +1,10 @@
 import { Modal } from 'antd';
-
-interface DeleteConfirmationProps {
-  isVisible: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-}
+import { DeleteConfirmationProps } from '@/interface';
 
 export const DeleteConfirmation = ({
   isVisible,
   onClose,
-  onConfirm,
+  onConfirm
 }: DeleteConfirmationProps) => {
   return (
     <Modal

@@ -1,14 +1,6 @@
 import { Modal, Form, Input, Button, message } from 'antd';
-import { Player } from '@/interface';
+import { Player, PlayerFormComponentProps } from '@/interface';
 import { MAX_PLAYERS } from '@/utils/groupPlayer';
-
-interface PlayerFormComponentProps {
-  isVisible: boolean;
-  onClose: () => void;
-  onSubmit: (name: string) => void;
-  editingPlayer?: Player;
-  players: Player[];
-}
 
 export const PlayerForm = ({
   isVisible,

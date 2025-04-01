@@ -2,13 +2,6 @@ import { Modal, Typography, Button } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { VerificationModalProps } from '@/interface/qrcode';
 
-interface VerificationModalProps {
-  visible: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-  promptPayNumber: string;
-}
-
 export const VerificationModal = ({
   visible,
   onCancel,

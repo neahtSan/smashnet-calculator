@@ -1,10 +1,5 @@
 import { Typography, InputNumber } from 'antd';
-import { CourtFee } from '@/interface';
-
-interface CourtFeeSectionProps {
-  courtFee: CourtFee;
-  onCourtFeeChange: (courtFee: CourtFee) => void;
-}
+import { CourtFee, CourtFeeSectionProps } from '@/interface';
 
 export const CourtFeeSection = ({ courtFee, onCourtFeeChange }: CourtFeeSectionProps) => {
   const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
