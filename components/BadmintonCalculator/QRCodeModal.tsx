@@ -118,6 +118,11 @@ export const QRCodeModal = ({
               style={{ margin: '1rem' }}
             />
           </div>
+          <Typography.Text type="secondary" className="text-center text-sm">
+            {allPlayersHaveSameAmount 
+              ? "QR code is set with the exact amount each player needs to pay" 
+              : "QR code amount is set to ฿0 since players have different costs"}
+          </Typography.Text>
           <Button 
             type="primary" 
             onClick={handleShare}
@@ -125,7 +130,7 @@ export const QRCodeModal = ({
             disabled={isSharing}
             className="w-48"
           >
-            {isSharing ? 'Saving...' : 'Save to Photos'}
+            {isSharing ? 'Saving...' : 'Share/Save Photos'}
           </Button>
         </div>
 
@@ -136,7 +141,7 @@ export const QRCodeModal = ({
               <>
                 <div className="flex justify-between items-center">
                   <Typography.Text strong>Amount per person:</Typography.Text>
-                  <Typography.Text type="success" strong>฿{individualAmount?.toFixed(2)}</Typography.Text>
+                  <Typography.Text type="success" strong>฿{Math.ceil(individualAmount || 0)}</Typography.Text>
                 </div>
                 <div className="flex justify-between items-center">
                   <Typography.Text strong>Number of players:</Typography.Text>
@@ -148,7 +153,7 @@ export const QRCodeModal = ({
                 <div key={cost.name} className="flex flex-col">
                   <div className="flex justify-between items-center">
                     <Typography.Text strong>{cost.name}</Typography.Text>
-                    <Typography.Text type="success" strong>฿{cost.total.toFixed(2)}</Typography.Text>
+                    <Typography.Text type="success" strong>฿{Math.ceil(cost.total)}</Typography.Text>
                   </div>
                   <div className="text-sm text-gray-500">
                     <div className="flex justify-between">
@@ -167,8 +172,10 @@ export const QRCodeModal = ({
             )}
             <div className="!my-4 border-t border-gray-200 pt-4">
               <div className="flex justify-between items-center">
-                <Typography.Text strong>Total Cost:</Typography.Text>
-                <Typography.Text type="success" strong>฿{totalCost.toFixed(2)}</Typography.Text>
+                <Typography.Text strong>Total Cost (Round up):</Typography.Text>
+                <Typography.Text type="success" strong>
+                  ฿{playerCosts.reduce((sum, cost) => sum + Math.ceil(cost.total), 0)}
+                </Typography.Text>
               </div>
             </div>
           </div>

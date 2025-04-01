@@ -1,23 +1,26 @@
 import { Typography, Space, Divider } from 'antd';
-import { PlayerStats, CustomExpense } from '@/interface';
-import { calculatePlayerCosts, calculateTotalCustomExpenses } from '@/utils/calculatorLogic';
+import { PlayerStats, CustomExpense, CourtFee, Shuttlecock } from '@/interface';
+import { calculateTotalPlayerHours, calculateTotalCustomExpenses, calculatePlayerCosts } from '@/utils/calculatorLogic';
 
 interface CostBreakdownProps {
   players: PlayerStats[];
-  sharedCost: number;
+  courtFee: CourtFee;
+  shuttlecock: Shuttlecock;
   customExpenses: CustomExpense[];
   totalCost: number;
 }
 
 export const CostBreakdown = ({ 
   players, 
-  sharedCost, 
+  courtFee,
+  shuttlecock,
   customExpenses, 
   totalCost 
 }: CostBreakdownProps) => {
-  const sharedCostPerPlayer = players.length > 0 ? sharedCost / players.length : 0;
+  const totalPlayerHours = calculateTotalPlayerHours(players);
   const totalCustomExpenses = calculateTotalCustomExpenses(customExpenses, players.length);
-  const playerCosts = calculatePlayerCosts(players, sharedCost, customExpenses);
+  const playerCosts = calculatePlayerCosts(players, courtFee, shuttlecock, customExpenses);
+  const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
 
   return (
     <>
@@ -25,12 +28,16 @@ export const CostBreakdown = ({
         <Typography.Title level={5}>Cost Breakdown</Typography.Title>
         <Space direction="vertical" className="w-full">
           <div className="flex justify-between">
-            <Typography.Text>Shared Costs:</Typography.Text>
-            <Typography.Text>฿{sharedCost.toFixed(2)}</Typography.Text>
+            <Typography.Text>Total Player Hours:</Typography.Text>
+            <Typography.Text>{totalPlayerHours.toFixed(1)} hours</Typography.Text>
           </div>
           <div className="flex justify-between">
-            <Typography.Text>Shared Cost per Player:</Typography.Text>
-            <Typography.Text>฿{sharedCostPerPlayer.toFixed(2)}</Typography.Text>
+            <Typography.Text>Court Cost:</Typography.Text>
+            <Typography.Text>฿{totalCourtFee.toFixed(2)}</Typography.Text>
+          </div>
+          <div className="flex justify-between">
+            <Typography.Text>Shuttlecock Cost:</Typography.Text>
+            <Typography.Text>฿{(shuttlecock.quantity * shuttlecock.pricePerPiece).toFixed(2)}</Typography.Text>
           </div>
           {customExpenses.length > 0 && (
             <div className="flex justify-between">
@@ -55,6 +62,11 @@ export const CostBreakdown = ({
             <div key={cost.name} className="flex justify-between items-center">
               <div>
                 <Typography.Text strong>{cost.name}</Typography.Text>
+                {(cost.hours || 0) > 0 && (
+                  <Typography.Text type="secondary" className="ml-2">
+                    ({cost.hours} hrs)
+                  </Typography.Text>
+                )}
                 {cost.customExpenses > 0 && (
                   <Typography.Text type="secondary" className="ml-2">
                     (+฿{cost.customExpenses.toFixed(2)})
@@ -62,10 +74,17 @@ export const CostBreakdown = ({
                 )}
               </div>
               <Typography.Text strong type="success">
-                ฿{cost.total.toFixed(2)}
+                ฿{Math.ceil(cost.total)}
               </Typography.Text>
             </div>
           ))}
+          <Divider className="my-2" />
+          <div className="flex justify-between items-center">
+            <Typography.Text strong>Total Cost (Round up):</Typography.Text>
+            <Typography.Text strong type="success">
+              ฿{playerCosts.reduce((sum, cost) => sum + Math.ceil(cost.total), 0)}
+            </Typography.Text>
+          </div>
         </Space>
       </div>
     </>

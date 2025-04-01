@@ -126,7 +126,11 @@ export const AdditionalExpenses = ({
           </div>
           {expense.assignedTo.length > 0 ? (
             <Typography.Text type="secondary" className="text-sm">
-              Each selected player will pay ฿{(expense.amount / expense.assignedTo.length).toFixed(2)}
+              {expense.isShared ? (
+                `Each selected player will pay ฿${(expense.amount / expense.assignedTo.length).toFixed(2)}`
+              ) : (
+                `Each selected player will pay ฿${expense.amount.toFixed(2)}`
+              )}
             </Typography.Text>
           ) : players.length > 0 ? (
             <Typography.Text type="secondary" className="text-sm">

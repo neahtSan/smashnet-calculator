@@ -8,7 +8,7 @@ import { CourtFeeSection } from './BadmintonCalculator/CourtFeeSection';
 import { ShuttlecockSection } from './BadmintonCalculator/ShuttlecockSection';
 import { PromptPaySection } from './BadmintonCalculator/PromptPaySection';
 import { PlayerListWithHours } from './BadmintonCalculator/PlayerListWithHours';
-import { calculateSharedCosts, calculatePlayerCosts, calculateTotalCost } from '@/utils/calculatorLogic';
+import { calculatePlayerCosts, calculateTotalCost } from '@/utils/calculatorLogic';
 
 export const BadmintonCostCalculator = ({
   isVisible,
@@ -27,9 +27,8 @@ export const BadmintonCostCalculator = ({
   });
   const [customExpenses, setCustomExpenses] = useState<CustomExpense[]>([]);
 
-  const sharedCost = calculateSharedCosts(courtFee, shuttlecock);
-  const playerCosts = calculatePlayerCosts(players, sharedCost, customExpenses);
-  const totalCost = calculateTotalCost(sharedCost, customExpenses, players.length);
+  const playerCosts = calculatePlayerCosts(players, courtFee, shuttlecock, customExpenses);
+  const totalCost = calculateTotalCost(courtFee, shuttlecock, customExpenses, players.length);
 
   return (
     <div className="min-h-screen bg-white">
@@ -80,7 +79,8 @@ export const BadmintonCostCalculator = ({
 
           <CostBreakdown
             players={players}
-            sharedCost={sharedCost}
+            courtFee={courtFee}
+            shuttlecock={shuttlecock}
             customExpenses={customExpenses}
             totalCost={totalCost}
           />

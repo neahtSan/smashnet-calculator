@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Input, Button, List, Typography, Space, Switch, InputNumber } from 'antd';
+import { Button, List, Typography, Space, Switch, InputNumber } from 'antd';
 import { UserAddOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import { PlayerStats } from '@/interface';
+import { PlayerForm } from '../PlayerForm';
 
 interface PlayerListWithHoursProps {
   players: PlayerStats[];
@@ -9,22 +10,20 @@ interface PlayerListWithHoursProps {
 }
 
 export const PlayerListWithHours = ({ players, onPlayersChange }: PlayerListWithHoursProps) => {
-  const [newPlayerName, setNewPlayerName] = useState('');
   const [usePlayerHours, setUsePlayerHours] = useState(false);
+  const [isAddPlayerModalVisible, setIsAddPlayerModalVisible] = useState(false);
 
-  const handleAddPlayer = () => {
-    if (newPlayerName.trim()) {
-      onPlayersChange([...players, {
-        name: newPlayerName.trim(),
-        wins: 0,
-        losses: 0,
-        winRate: 0,
-        totalMatches: 0,
-        rank: players.length + 1,
-        hours: 0
-      }]);
-      setNewPlayerName('');
-    }
+  const handleAddPlayer = (name: string) => {
+    onPlayersChange([...players, {
+      name: name.trim(),
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+      totalMatches: 0,
+      rank: players.length + 1,
+      hours: 0
+    }]);
+    setIsAddPlayerModalVisible(false);
   };
 
   const handleRemovePlayer = (playerName: string) => {
@@ -41,24 +40,13 @@ export const PlayerListWithHours = ({ players, onPlayersChange }: PlayerListWith
     <div>
       <div className="flex items-center justify-between mb-4">
         <Typography.Title level={5}>Players</Typography.Title>
-        <Space>
-          <Input
-            placeholder="New player name"
-            value={newPlayerName}
-            onChange={e => setNewPlayerName(e.target.value)}
-            className="w-40"
-            onPressEnter={handleAddPlayer}
-            autoComplete="off"
-            autoFocus={false}
-          />
-          <Button
-            type="primary"
-            icon={<UserAddOutlined />}
-            onClick={handleAddPlayer}
-          >
-            Add
-          </Button>
-        </Space>
+        <Button
+          type="primary"
+          icon={<UserAddOutlined />}
+          onClick={() => setIsAddPlayerModalVisible(true)}
+        >
+          Add
+        </Button>
       </div>
       <List
         size="small"
@@ -112,6 +100,13 @@ export const PlayerListWithHours = ({ players, onPlayersChange }: PlayerListWith
           Total of {players.length} Players
         </Typography.Text>
       </div>
+
+      <PlayerForm
+        isVisible={isAddPlayerModalVisible}
+        onClose={() => setIsAddPlayerModalVisible(false)}
+        onSubmit={handleAddPlayer}
+        players={players.map(p => ({ id: p.name, name: p.name, wins: p.wins, losses: p.losses, matches: p.totalMatches }))}
+      />
     </div>
   );
 }; 

@@ -5,7 +5,12 @@ interface PlayerCost {
   sharedCost: number;
   customExpenses: number;
   total: number;
+  hours?: number;
 }
+
+export const calculateTotalPlayerHours = (players: PlayerStats[]): number => {
+  return players.reduce((sum, player) => sum + (player.hours || 0), 0);
+};
 
 export const calculateSharedCosts = (courtFee: CourtFee, shuttlecock: Shuttlecock): number => {
   const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
@@ -15,60 +20,87 @@ export const calculateSharedCosts = (courtFee: CourtFee, shuttlecock: Shuttlecoc
 
 export const calculatePlayerCosts = (
   players: PlayerStats[],
-  sharedCost: number,
+  courtFee: CourtFee,
+  shuttlecock: Shuttlecock,
   customExpenses: CustomExpense[]
 ): PlayerCost[] => {
-  const sharedCostPerPlayer = players.length > 0 ? sharedCost / players.length : 0;
+  const totalPlayerHours = calculateTotalPlayerHours(players);
+  const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
+  const courtCostPerPlayerHour = totalPlayerHours > 0 ? totalCourtFee / totalPlayerHours : 0;
+  const totalShuttlecockCost = shuttlecock.quantity * shuttlecock.pricePerPiece;
+  const shuttlecockCostPerPlayer = players.length > 0 ? totalShuttlecockCost / players.length : 0;
   
   return players.map(player => {
-    // Get expenses specifically assigned to this player
-    const assignedExpenses = customExpenses
-      .filter(expense => expense.assignedTo.includes(player.name))
-      .reduce((sum, expense) => sum + expense.amount, 0);
-    
-    // Get unassigned expenses
-    const unassignedExpenses = customExpenses.filter(expense => expense.assignedTo.length === 0);
-    
-    // Calculate shared unassigned expenses
-    const sharedUnassignedExpenses = unassignedExpenses
-      .filter(expense => expense.isShared)
-      .reduce((sum, expense) => sum + expense.amount, 0);
-    const sharedUnassignedExpensesPerPlayer = players.length > 0 ? sharedUnassignedExpenses / players.length : 0;
-    
-    // Calculate full unassigned expenses (each player pays full amount)
-    const fullUnassignedExpenses = unassignedExpenses
-      .filter(expense => !expense.isShared)
-      .reduce((sum, expense) => sum + expense.amount, 0);
-    
+    const playerHours = player.hours || 0;
+    const playerCourtCost = playerHours * courtCostPerPlayerHour;
+
+    let totalCustomExpenses = 0;
+
+    customExpenses.forEach(expense => {
+      if (expense.assignedTo.length > 0) {
+        // If expense is assigned to specific players
+        if (expense.assignedTo.includes(player.name)) {
+          if (expense.isShared) {
+            // Left toggle: Divide expense among assigned players
+            totalCustomExpenses += expense.amount / expense.assignedTo.length;
+          } else {
+            // Right toggle: Each assigned player pays the full amount
+            totalCustomExpenses += expense.amount;
+          }
+        }
+      } else {
+        // For unassigned expenses (all players)
+        if (expense.isShared) {
+          // Left toggle: "Share Equally" - divide by number of players
+          totalCustomExpenses += expense.amount / players.length;
+        } else {
+          // Right toggle: "Each Player Pays Full" - everyone pays full amount
+          totalCustomExpenses += expense.amount;
+        }
+      }
+    });
+
     return {
       name: player.name,
-      sharedCost: sharedCostPerPlayer,
-      customExpenses: assignedExpenses + sharedUnassignedExpensesPerPlayer + fullUnassignedExpenses,
-      total: sharedCostPerPlayer + assignedExpenses + sharedUnassignedExpensesPerPlayer + fullUnassignedExpenses
+      hours: playerHours,
+      sharedCost: playerCourtCost + shuttlecockCostPerPlayer,
+      customExpenses: totalCustomExpenses,
+      total: playerCourtCost + shuttlecockCostPerPlayer + totalCustomExpenses
     };
   });
 };
 
 export const calculateTotalCustomExpenses = (customExpenses: CustomExpense[], totalPlayers: number): number => {
-  return customExpenses.reduce((sum, expense) => {
-    // For unassigned expenses that are not shared, multiply by number of players
-    if (expense.assignedTo.length === 0) {
+  let total = 0;
+
+  customExpenses.forEach(expense => {
+    if (expense.assignedTo.length > 0) {
       if (expense.isShared) {
-        // For shared expenses, just add the amount once
-        return sum + expense.amount;
+        // Left toggle: Just add the amount once
+        total += expense.amount;
       } else {
-        // For non-shared expenses, multiply by number of players
-        return sum + (expense.amount * totalPlayers);
+        // Right toggle: Each assigned player pays full amount
+        total += expense.amount * expense.assignedTo.length;
+      }
+    } else {
+      if (expense.isShared) {
+        // Left toggle: Just add the amount once
+        total += expense.amount;
+      } else {
+        // Right toggle: Each player pays full amount
+        total += expense.amount * totalPlayers;
       }
     }
-    // For assigned expenses, just add the amount once
-    return sum + expense.amount;
-  }, 0);
+  });
+
+  return total;
 };
 
-export const calculateTotalCost = (sharedCost: number, customExpenses: CustomExpense[], totalPlayers: number): number => {
+export const calculateTotalCost = (courtFee: CourtFee, shuttlecock: Shuttlecock, customExpenses: CustomExpense[], totalPlayers: number): number => {
+  const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
+  const totalShuttlecockCost = shuttlecock.quantity * shuttlecock.pricePerPiece;
   const totalCustomExpenses = calculateTotalCustomExpenses(customExpenses, totalPlayers);
-  return sharedCost + totalCustomExpenses;
+  return totalCourtFee + totalShuttlecockCost + totalCustomExpenses;
 };
 
 export const checkAllPlayersHaveSameAmount = (playerCosts: PlayerCost[]): boolean => {
