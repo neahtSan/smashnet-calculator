@@ -19,10 +19,12 @@ export const CostBreakdown = ({
       <div>
         <Typography.Title level={5}>Cost Breakdown</Typography.Title>
         <Space direction="vertical" className="w-full">
-          <div className="flex justify-between">
-            <Typography.Text>Total Player Hours:</Typography.Text>
-            <Typography.Text>{totalPlayerHours.toFixed(1)} hours</Typography.Text>
-          </div>
+          {totalPlayerHours > 0 && (
+            <div className="flex justify-between">
+              <Typography.Text>Total Player Hours:</Typography.Text>
+              <Typography.Text>{totalPlayerHours.toFixed(1)} hours</Typography.Text>
+            </div>
+          )}
           <div className="flex justify-between">
             <Typography.Text>Court Cost:</Typography.Text>
             <Typography.Text>฿{totalCourtFee.toFixed(2)}</Typography.Text>
@@ -54,7 +56,7 @@ export const CostBreakdown = ({
             <div key={cost.name} className="flex justify-between items-center">
               <div>
                 <Typography.Text strong>{cost.name}</Typography.Text>
-                {(cost.hours || 0) > 0 && (
+                {cost.hours !== undefined && cost.hours > 0 && (
                   <Typography.Text type="secondary" className="ml-2">
                     ({cost.hours} hrs)
                   </Typography.Text>
