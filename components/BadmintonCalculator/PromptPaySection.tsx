@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { VerificationModal } from './VerificationModal';
 import { QRCodeModal } from './QRCodeModal';
 import generatePayload from 'promptpay-qr';
+import { formatPhoneNumber, validatePromptPay } from '@/utils/calculatorLogic';
 
 interface PromptPaySectionProps {
   playerCosts: Array<{
@@ -21,44 +22,6 @@ export const PromptPaySection = ({ playerCosts, totalCost }: PromptPaySectionPro
   const [verifyNumberVisible, setVerifyNumberVisible] = useState(false);
   const [qrCodeVisible, setQrCodeVisible] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<{ amount?: number; message?: string } | null>(null);
-
-  const formatPhoneNumber = (input: string): string => {
-    try {
-      // Remove all non-digit characters
-      const digitsOnly = input.replace(/\D/g, '');
-      
-      // If it starts with '66', replace with '0'
-      if (digitsOnly.startsWith('66')) {
-        return '0' + digitsOnly.slice(2);
-      }
-      
-      // If it starts with '+66', replace with '0'
-      if (digitsOnly.startsWith('66')) {
-        return '0' + digitsOnly.slice(2);
-      }
-      
-      return digitsOnly;
-    } catch (error) {
-      return input;
-    }
-  };
-
-  const validatePromptPay = (number: string): boolean => {
-    // Must be exactly 10 digits
-    if (number.length !== 10) return false;
-
-    // Must start with '0'
-    if (!number.startsWith('0')) return false;
-
-    // Second digit must be 6, 8, 9 for mobile numbers
-    const secondDigit = parseInt(number[1]);
-    if (![6, 8, 9].includes(secondDigit)) return false;
-
-    // Must contain only digits
-    if (!/^\d+$/.test(number)) return false;
-
-    return true;
-  };
 
   const handlePromptPayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedNumber = formatPhoneNumber(e.target.value);

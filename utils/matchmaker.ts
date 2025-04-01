@@ -1,4 +1,4 @@
-import { Player, Match } from '@/types/interface';
+import { Player, Match } from '@/interface';
 import { getGroupSizes } from './groupPlayer';
 
 export const calculateWinRate = (player: Player): number => {

@@ -13,6 +13,7 @@ export interface PlayerStats {
   winRate: number;
   totalMatches: number;
   rank: number;
+  hours?: number;
 }
 
 export interface PlayerFormProps {

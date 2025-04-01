@@ -1,18 +1,12 @@
 import { Typography, Space, Divider } from 'antd';
 import { PlayerStats, CustomExpense } from '@/interface';
+import { calculatePlayerCosts, calculateTotalCustomExpenses } from '@/utils/calculatorLogic';
 
 interface CostBreakdownProps {
   players: PlayerStats[];
   sharedCost: number;
   customExpenses: CustomExpense[];
   totalCost: number;
-}
-
-interface PlayerCost {
-  name: string;
-  sharedCost: number;
-  customExpenses: number;
-  total: number;
 }
 
 export const CostBreakdown = ({ 
@@ -22,20 +16,8 @@ export const CostBreakdown = ({
   totalCost 
 }: CostBreakdownProps) => {
   const sharedCostPerPlayer = players.length > 0 ? sharedCost / players.length : 0;
-  const totalCustomExpenses = customExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-
-  const playerCosts: PlayerCost[] = players.map(player => {
-    const playerCustomExpenses = customExpenses
-      .filter(expense => expense.assignedTo.includes(player.name))
-      .reduce((sum, expense) => sum + expense.amount, 0);
-    
-    return {
-      name: player.name,
-      sharedCost: sharedCostPerPlayer,
-      customExpenses: playerCustomExpenses,
-      total: sharedCostPerPlayer + playerCustomExpenses
-    };
-  });
+  const totalCustomExpenses = calculateTotalCustomExpenses(customExpenses, players.length);
+  const playerCosts = calculatePlayerCosts(players, sharedCost, customExpenses);
 
   return (
     <>

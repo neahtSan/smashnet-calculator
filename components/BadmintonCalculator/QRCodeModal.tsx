@@ -2,6 +2,7 @@ import { Modal, Button, Typography, Spin, message } from 'antd';
 import { ShareAltOutlined } from '@ant-design/icons';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRCodeModalProps } from '@/interface/qrcode';
+import { checkAllPlayersHaveSameAmount } from '@/utils/calculatorLogic';
 import { useState } from 'react';
 
 export const QRCodeModal = ({
@@ -82,7 +83,7 @@ export const QRCodeModal = ({
     }
   };
 
-  const allPlayersHaveSameAmount = playerCosts.every(cost => cost.total === playerCosts[0].total);
+  const allPlayersHaveSameAmount = checkAllPlayersHaveSameAmount(playerCosts);
   const individualAmount = allPlayersHaveSameAmount ? playerCosts[0].total : null;
 
   return (

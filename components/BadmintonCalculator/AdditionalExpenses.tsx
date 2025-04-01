@@ -1,6 +1,7 @@
 import { Typography, Input, InputNumber, Button, Select, Radio } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { CustomExpense, PlayerStats } from '@/interface';
+import { calculateTotalCustomExpenses } from '@/utils/calculatorLogic';
 
 interface AdditionalExpensesProps {
   customExpenses: CustomExpense[];
@@ -13,7 +14,7 @@ export const AdditionalExpenses = ({
   players, 
   onCustomExpensesChange 
 }: AdditionalExpensesProps) => {
-  const totalCustomExpenses = customExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalCustomExpenses = calculateTotalCustomExpenses(customExpenses, players.length);
 
   const handleCustomExpenseChange = (
     id: string,
@@ -87,6 +88,22 @@ export const AdditionalExpenses = ({
               onChange={value => handleCustomExpenseChange(expense.id, 'assignedTo', value)}
               className="w-full"
               allowClear
+              virtual={false}
+              dropdownMatchSelectWidth={false}
+              maxTagCount="responsive"
+              showSearch={false}
+              onDropdownVisibleChange={(visible) => {
+                if (visible) {
+                  // Prevent keyboard from opening
+                  const selectInput = document.querySelector('.ant-select-selector input') as HTMLElement;
+                  if (selectInput) {
+                    selectInput.setAttribute('readonly', 'true');
+                    setTimeout(() => {
+                      selectInput.removeAttribute('readonly');
+                    }, 100);
+                  }
+                }
+              }}
             >
               {players.map(player => (
                 <Select.Option key={player.name} value={player.name}>
@@ -94,7 +111,7 @@ export const AdditionalExpenses = ({
                 </Select.Option>
               ))}
             </Select>
-            {expense.assignedTo.length === 0 && players.length > 0 && (
+            {players.length > 0 && (
               <Radio.Group
                 value={expense.isShared ?? true}
                 onChange={e => handleCustomExpenseChange(expense.id, 'isShared', e.target.value)}
@@ -109,14 +126,14 @@ export const AdditionalExpenses = ({
           </div>
           {expense.assignedTo.length > 0 ? (
             <Typography.Text type="secondary" className="text-sm">
-              Each selected player will pay ฿{expense.amount.toFixed(2)}
+              Each selected player will pay ฿{(expense.amount / expense.assignedTo.length).toFixed(2)}
             </Typography.Text>
           ) : players.length > 0 ? (
             <Typography.Text type="secondary" className="text-sm">
               {expense.isShared ? (
-                `This expense will be shared equally: ฿${(expense.amount / players.length).toFixed(2)} per player`
+                `Each player will pay ฿${(expense.amount / players.length).toFixed(2)}`
               ) : (
-                `Each player will pay the full amount: ฿${expense.amount.toFixed(2)}`
+                `Each player will pay ฿${expense.amount.toFixed(2)}`
               )}
             </Typography.Text>
           ) : null}

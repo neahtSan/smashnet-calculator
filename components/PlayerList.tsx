@@ -1,6 +1,6 @@
 import { List, Button } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Player } from '@/types/interface';
+import { Player } from '@/interface';
 
 interface PlayerListProps {
   players: Player[];
