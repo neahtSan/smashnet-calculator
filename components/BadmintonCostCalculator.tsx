@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Form, Input, Button, InputNumber, List, Typography, Space, Divider, Select, Modal } from 'antd';
+import { Form, Input, Button, InputNumber, List, Typography, Space, Divider, Select, Modal, message, Spin } from 'antd';
 import { DeleteOutlined, PlusOutlined, QrcodeOutlined, ShareAltOutlined, ArrowLeftOutlined, UserAddOutlined, UserDeleteOutlined, ExclamationCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import { PlayerStats, CourtFee, Shuttlecock, CustomExpense, BadmintonCostCalculatorProps } from '@/interface';
 import { QRCodeSVG } from 'qrcode.react';
@@ -28,6 +28,7 @@ export const BadmintonCostCalculator = ({
   const [qrCodeData, setQrCodeData] = useState<{ amount?: number; message?: string } | null>(null);
   const [isValidPromptPay, setIsValidPromptPay] = useState(false);
   const [verifyNumberVisible, setVerifyNumberVisible] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
   const totalShuttlecockCost = shuttlecock.quantity * shuttlecock.pricePerPiece;
@@ -162,27 +163,115 @@ export const BadmintonCostCalculator = ({
     }
   };
 
-  const handleDownloadQR = () => {
-    const svg = document.getElementById('qr-code-svg');
-    if (!svg) return;
+  const handleDownloadQR = async () => {
+    try {
+      setIsDownloading(true);
+      const svg = document.getElementById('qr-code-svg');
+      if (!svg) {
+        message.error('QR code not found');
+        return;
+      }
 
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
+      // Create a canvas with padding and background
+      const padding = 40;
+      const canvas = document.createElement('canvas');
+      const svgWidth = svg.clientWidth || 256;
+      const svgHeight = svg.clientHeight || 256;
+      canvas.width = svgWidth + (padding * 2);
+      canvas.height = svgHeight + (padding * 2);
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        message.error('Could not create image');
+        return;
+      }
 
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-      const pngFile = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.download = 'promptpay-qr.png';
-      downloadLink.href = pngFile;
-      downloadLink.click();
-    };
+      // Fill white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+      // Convert SVG to image
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+      
+      // Create a promise to handle the image loading
+      await new Promise((resolve, reject) => {
+        img.onload = async () => {
+          try {
+            // Draw image with padding
+            ctx.drawImage(img, padding, padding, svgWidth, svgHeight);
+            
+            // Convert to blob and handle download/share
+            const blob = await new Promise<Blob | null>((resolve) => {
+              canvas.toBlob(resolve, 'image/png');
+            });
+
+            if (!blob) {
+              reject(new Error('Could not create image file'));
+              return;
+            }
+
+            // Check if running on iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            
+            if (isIOS) {
+              // For iOS: Create data URL for the image
+              const imageUrl = URL.createObjectURL(blob);
+              
+              // Create a modal to show the image with save instructions
+              Modal.info({
+                title: 'Save QR Code',
+                content: (
+                  <div className="text-center">
+                    <img 
+                      src={imageUrl} 
+                      alt="PromptPay QR Code" 
+                      style={{ maxWidth: '100%', height: 'auto' }}
+                      onLoad={() => URL.revokeObjectURL(imageUrl)}
+                    />
+                    <Typography.Text className="block mt-4">
+                      Press and hold the QR code image, then tap "Save Image" to download it to your Photos.
+                    </Typography.Text>
+                  </div>
+                ),
+                okText: 'Done',
+                className: 'save-qr-modal',
+                centered: true,
+                maskClosable: true
+              });
+              
+              message.success('Long press the QR code to save it');
+            } else {
+              // For other devices: Normal download
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `promptpay-${promptPayNumber}.png`;
+              link.click();
+              window.URL.revokeObjectURL(url);
+              message.success('QR code downloaded successfully');
+            }
+
+            resolve(true);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        img.onerror = () => reject(new Error('Failed to load QR code'));
+
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        img.src = url;
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      });
+
+    } catch (error) {
+      console.error('Error downloading QR:', error);
+      message.error('Failed to download QR code');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const formatPhoneNumber = (input: string): string => {
@@ -584,8 +673,13 @@ export const BadmintonCostCalculator = ({
             <Button danger onClick={() => setQrCodeVisible(false)}>
               Close
             </Button>
-            <Button type="primary" onClick={handleDownloadQR} icon={<DownloadOutlined />}>
-              Download QR Code
+            <Button 
+              type="primary" 
+              onClick={handleDownloadQR} 
+              icon={isDownloading ? <Spin className="mr-2" /> : <DownloadOutlined />}
+              disabled={isDownloading}
+            >
+              {isDownloading ? 'Downloading...' : 'Download QR Code'}
             </Button>
           </div>
         }
