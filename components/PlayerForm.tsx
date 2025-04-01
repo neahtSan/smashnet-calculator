@@ -57,7 +57,10 @@ export const PlayerForm = ({ isVisible, onClose, onSubmit, editingPlayer, player
             }
           ]}
         >
-          <Input maxLength={32} />
+          <Input 
+            maxLength={32} 
+            style={{ fontSize: '16px' }}
+          />
         </Form.Item>
       </Form>
     </Modal>
