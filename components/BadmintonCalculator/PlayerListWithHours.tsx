@@ -86,7 +86,13 @@ export const PlayerListWithHours = ({ players, onPlayersChange }: PlayerListWith
         <div className="flex items-center gap-2">
           <Switch
             checked={usePlayerHours}
-            onChange={setUsePlayerHours}
+            onChange={(checked) => {
+              setUsePlayerHours(checked);
+              if (!checked) {
+                // Reset all player hours when toggle is closed
+                onPlayersChange(players.map(player => ({ ...player, hours: undefined })));
+              }
+            }}
             checkedChildren="Different hours"
             unCheckedChildren="Same hours"
           />
