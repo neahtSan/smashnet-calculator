@@ -76,7 +76,7 @@ export const CostBreakdown = ({
           <div className="flex justify-between items-center">
             <Typography.Text strong>Total Cost (Round up):</Typography.Text>
             <Typography.Text strong type="success">
-              ฿{playerCosts.reduce((sum, cost) => sum + Math.ceil(cost.total), 0)}
+              ฿{Math.ceil(totalCost)}
             </Typography.Text>
           </div>
         </Space>

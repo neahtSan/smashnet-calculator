@@ -24,15 +24,30 @@ export const calculatePlayerCosts = (
   shuttlecock: Shuttlecock,
   customExpenses: CustomExpense[]
 ): PlayerCost[] => {
-  const totalPlayerHours = calculateTotalPlayerHours(players);
   const totalCourtFee = courtFee.hourlyRate * courtFee.hours;
-  const courtCostPerPlayerHour = totalPlayerHours > 0 ? totalCourtFee / totalPlayerHours : 0;
   const totalShuttlecockCost = shuttlecock.quantity * shuttlecock.pricePerPiece;
   const shuttlecockCostPerPlayer = players.length > 0 ? totalShuttlecockCost / players.length : 0;
-  
+
+  // Check if all players have the same hours
+  const allPlayersHaveSameHours = players.every(player => 
+    (player.hours || courtFee.hours) === (players[0].hours || courtFee.hours)
+  );
+
   return players.map(player => {
-    const playerHours = player.hours || 0;
-    const playerCourtCost = playerHours * courtCostPerPlayerHour;
+    const playerHours = player.hours || courtFee.hours;
+    let playerCourtCost: number;
+
+    if (allPlayersHaveSameHours) {
+      // Case 1: All players have the same hours
+      // Calculate by dividing total court fee equally among players
+      playerCourtCost = totalCourtFee / players.length;
+    } else {
+      // Case 2: Players have different hours
+      // Calculate based on player's proportion of total hours
+      const totalPlayerHours = players.reduce((sum, p) => sum + (p.hours || courtFee.hours), 0);
+      const costPerHour = totalCourtFee / totalPlayerHours;
+      playerCourtCost = playerHours * costPerHour;
+    }
 
     let totalCustomExpenses = 0;
 
